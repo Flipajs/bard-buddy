@@ -5,12 +5,17 @@ import Editor from '@/components/Editor';
 import MetricsPanel from '@/components/MetricsPanel';
 import AssistPanel from '@/components/AssistPanel';
 import VersionSidebar from '@/components/VersionSidebar';
+import { GuitarPanel } from '@/components/GuitarPanel';
+
+type RightPanelTab = 'assist' | 'guitar' | 'versions';
 
 export default function Home() {
   const [poemId, setPoemId] = useState<number | null>(null);
   const [title, setTitle] = useState('Untitled');
   const [content, setContent] = useState('');
   const [selectedText, setSelectedText] = useState('');
+  const [chordLine, setChordLine] = useState('');
+  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('assist');
   const initializingRef = useRef(false);
 
   // Initialize poem on mount
@@ -105,24 +110,51 @@ export default function Home() {
           <MetricsPanel text={content} />
         </div>
 
-        {/* Right column: Versions + Assist (can toggle) */}
+        {/* Right column: Assist + Guitar + Versions tabs */}
         <div className="w-80 bg-white overflow-hidden flex flex-col">
-          <div className="border-b border-gray-200 p-3 flex gap-2">
-            <button className="text-xs font-medium px-3 py-1 rounded bg-blue-600 text-white">
+          <div className="border-b border-gray-200 p-2 flex gap-2">
+            <button
+              onClick={() => setRightPanelTab('assist')}
+              className={`text-xs font-medium px-3 py-1 rounded transition ${
+                rightPanelTab === 'assist'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
               Asistace
             </button>
-            <button className="text-xs font-medium px-3 py-1 rounded text-gray-600 hover:bg-gray-100">
+            <button
+              onClick={() => setRightPanelTab('guitar')}
+              className={`text-xs font-medium px-3 py-1 rounded transition ${
+                rightPanelTab === 'guitar'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Kytara
+            </button>
+            <button
+              onClick={() => setRightPanelTab('versions')}
+              className={`text-xs font-medium px-3 py-1 rounded transition ${
+                rightPanelTab === 'versions'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
               Verze
             </button>
           </div>
 
           <div className="flex-1 overflow-hidden">
-            <AssistPanel selectedText={selectedText} onInsert={handleInsert} />
-          </div>
-
-          {/* Versions always visible at bottom */}
-          <div className="border-t border-gray-200 max-h-40 overflow-y-auto">
-            <VersionSidebar poemId={poemId || undefined} onRestore={handleRestore} />
+            {rightPanelTab === 'assist' && (
+              <AssistPanel selectedText={selectedText} onInsert={handleInsert} />
+            )}
+            {rightPanelTab === 'guitar' && (
+              <GuitarPanel onChordLineChange={setChordLine} />
+            )}
+            {rightPanelTab === 'versions' && (
+              <VersionSidebar poemId={poemId || undefined} onRestore={handleRestore} />
+            )}
           </div>
         </div>
       </div>

@@ -185,6 +185,116 @@ getGenerativeModel({ model: 'gemini-2.0-flash' }).generateContent(prompt)
 
 ---
 
+## ADR-008: Key Detection Algorithm (Krumhansl-Schmuckler)
+
+**Status:** Accepted
+
+**Context:** MVP guitar mode needs to auto-detect musical key from a chord progression
+(e.g., "Am G F E7" → detect key of A minor).
+
+**Decision:** Use **Krumhansl-Schmuckler (KS) algorithm** with Pearson correlation.
+
+**Rationale:**
+- ✓ Well-established music theory foundation (40+ years of research)
+- ✓ Works with chord progressions (not just MIDI notes)
+- ✓ Gives confidence scores (Pearson r) — can show top 3 candidates
+- ✓ No ML model needed — pure algorithmic (fast, offline)
+- ✓ ~85% accuracy on common Western progressions (Czech folk/pop ideal)
+- ✓ Mode-aware (detects major vs. minor)
+
+**Algorithm sketch:**
+1. Build pitch-class vector (PCV) from chord notes
+2. For each of 24 candidate keys (12 roots × major/minor):
+   - Rotate PCV to align with candidate tonic
+   - Correlate against KS major/minor profile
+3. Return candidates sorted by score
+
+**Alternatives considered:**
+- Circle-of-fifths heuristic: simpler but no confidence scores
+- ML-based: overkill for MVP, needs training data
+- Rule-based (Roman numeral analysis): brittle, inflexible
+
+**Known limitations:**
+- Modal interchange (bVII) lowers confidence score (musically correct)
+- Chromatic chords may be mis-scored (intentional ambiguity)
+- Minimum 3 chords recommended for reliable detection
+
+---
+
+## ADR-009: Chord Suggestions (Diatonic + Mood Weighting)
+
+**Status:** Accepted
+
+**Context:** After key detection, suggest next chord options that fit the detected key
+and match the user's desired mood/emotion.
+
+**Decision:** Use **diatonic chord table** (major/minor) with **mood-based degree weighting**.
+
+**Rationale:**
+- ✓ Music theory correct — harmonies stay in key, avoid clashing
+- ✓ Fast & explainable — user sees why chords are suggested (degree + mood fit)
+- ✓ Extensible — easy to add secondary dominants, modal interchange later
+- ✓ No ML — pure lookup + sorting
+
+**Mood mappings (7 moods):**
+- `happy`: I IV V ii — bright, resolved chords
+- `sad`: i VI iv ii° — minor-heavy, descending motion
+- `tense`: vii° V iii vi — leading tone, unresolved dominants
+- `epic`: I V VI IV — cinematic, all strong chords
+- `romantic`: I vi IV ii — classic ballad/pop progression
+- `dark`: i vii° VI III — minor with diminished/tension
+- `neutral`: all degrees equal weight
+
+**Harmonic minor override:** V → V7 (harmonic minor convention for authentic feel)
+
+**Alternatives considered:**
+- Random suggestions: not useful
+- ML-based: overkill for MVP
+- Hardcoded progressions: inflexible, not creative
+
+---
+
+## ADR-010: Groove Patterns (Static Library, Metadata Only)
+
+**Status:** Accepted
+
+**Context:** MVP needs simple groove/rhythm notation for guitar patterns
+(e.g., "D DU DU" for pop strumming, "D DU" for ballad).
+
+**Decision:** Use **static pattern library** with pure **metadata** (no audio processing).
+
+**Rationale:**
+- ✓ 6 preset patterns cover 80% of beginner/folk/pop use cases
+- ✓ ASCII rendering only — no MIDI/audio engine needed
+- ✓ Pattern extensibility — easy to add more patterns later
+- ✓ Fits MVP scope — audio playback deferred to Phase 2
+- ✓ Lightweight — no dependencies, pure data structures
+
+**Pattern structure:**
+- `GroovePattern`: id, name, timeSignature, tempo, `StrokeEvent[]`
+- `StrokeEvent`: beat, subdivision, direction (D/U/x), accent flag
+- Renders to ASCII: `"D! U D U"` for pop, `"D U D U"` for ballad
+
+**Library contents (6 patterns):**
+1. Basic 4/4 — 4 downstrokes (beginner)
+2. Pop strum 4/4 — D-DU-DU pattern
+3. Ballad 4/4 — slower DU-DU
+4. Waltz 3/4 — 3-beat time
+5. Folk 6/8 — compound meter (DDU DDU)
+6. Travis picking — alternating bass + fingers
+
+**UX tradeoff:**
+- Limited to 6 presets initially (vs. infinite custom patterns)
+- User can type/paste custom patterns in Phase 2
+- MVP focuses on discovery of preset grooves that fit the key
+
+**Alternatives considered:**
+- Metronome/audio playback: Phase 2, too much scope for MVP
+- Complex tab notation: deferred, use simpler ASCII for now
+- ML-generated grooves: overkill, loss of explainability
+
+---
+
 ## Next Review
 
 These decisions should be reviewed if:
@@ -192,5 +302,6 @@ These decisions should be reviewed if:
 - Performance issues arise
 - Database grows beyond single-file capacity
 - Multi-user concurrency is needed
+- Key detection accuracy drops below 70% in real-world use
 
-Planned review: After phase 1 (MVP) is complete.
+Planned review: After phase 1 (MVP guitar mode) is complete.

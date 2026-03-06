@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { analyzePoem, findRhymePairs } from '@/lib/czech-metrics';
+import BranchTimelineView from '@/components/BranchTimelineView';
+import ComparePanel from '@/components/ComparePanel';
 
 interface Version {
   id: number;
@@ -42,10 +44,13 @@ function summarize(content: string) {
   };
 }
 
+type VariantViewMode = 'list' | 'timeline' | 'compare';
+
 export default function VariantSidebar({ poemId, onRestore }: VariantSidebarProps) {
   const [versions, setVersions] = useState<Version[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedVersionId, setSelectedVersionId] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<VariantViewMode>('list');
 
   const fetchVersions = async () => {
     if (!poemId) return;
@@ -132,6 +137,26 @@ export default function VariantSidebar({ poemId, onRestore }: VariantSidebarProp
         )}
       </div>
 
+      <div className="px-4 pt-3 border-b border-gray-200 flex gap-2">
+        {([
+          ['list', 'Seznam'],
+          ['timeline', 'Strom'],
+          ['compare', 'Porovnání'],
+        ] as Array<[VariantViewMode, string]>).map(([mode, label]) => (
+          <button
+            key={mode}
+            onClick={() => setViewMode(mode)}
+            className={`text-xs px-2 py-1 rounded ${
+              viewMode === mode
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {loading && <div className="text-xs text-gray-500">Načítám varianty...</div>}
 
@@ -139,7 +164,7 @@ export default function VariantSidebar({ poemId, onRestore }: VariantSidebarProp
           <div className="text-xs text-gray-400">Zatím nejsou uložené varianty.</div>
         )}
 
-        {versions.map((version, index) => {
+        {viewMode === 'list' && versions.map((version, index) => {
           const active = selected?.id === version.id;
           return (
             <button
@@ -182,6 +207,16 @@ export default function VariantSidebar({ poemId, onRestore }: VariantSidebarProp
             </button>
           );
         })}
+
+        {viewMode === 'timeline' && (
+          <BranchTimelineView
+            versions={versions}
+            selectedId={selectedVersionId}
+            onSelect={setSelectedVersionId}
+          />
+        )}
+
+        {viewMode === 'compare' && <ComparePanel versions={versions} />}
       </div>
     </div>
   );

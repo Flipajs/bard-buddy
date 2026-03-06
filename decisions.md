@@ -295,6 +295,34 @@ and match the user's desired mood/emotion.
 
 ---
 
+## ADR-011: Variant Exploration UX (List + Timeline + Compare)
+
+**Status:** Accepted
+
+**Context:** For real lyric writing, user must quickly switch between drafts, understand progression,
+and compare alternatives side-by-side without leaving the editor flow.
+
+**Decision:** Add a dedicated `VariantSidebar` with three modes:
+1. **Seznam (List)** — quick restore of recent versions + compact metrics
+2. **Strom (Timeline)** — MVP linear timeline visualization with node selection
+3. **Porovnání (Compare)** — A/B side-by-side content + metric deltas
+
+**Rationale:**
+- ✓ Minimizes context switching during writing (single right panel)
+- ✓ Supports both exploration (timeline) and decision-making (A/B)
+- ✓ Uses existing version data from `versions` API (no schema migration yet)
+- ✓ Keeps iteration speed high while preparing for true branching DAG in next step
+
+**Tradeoffs:**
+- Timeline is currently linear (heuristic), not true branch DAG (`parent_id` missing)
+- Compare is text+metrics only (no semantic diff yet)
+
+**Alternatives considered:**
+- Build full DAG schema first: more correct, slower to deliver
+- Keep only version list: faster, but weak exploration UX
+
+---
+
 ## Next Review
 
 These decisions should be reviewed if:

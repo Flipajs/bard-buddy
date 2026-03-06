@@ -5,16 +5,16 @@ import Editor from '@/components/Editor';
 import MetricsPanel from '@/components/MetricsPanel';
 import AssistPanel from '@/components/AssistPanel';
 import VersionSidebar from '@/components/VersionSidebar';
+import VariantSidebar from '@/components/VariantSidebar';
 import { GuitarPanel } from '@/components/GuitarPanel';
 
-type RightPanelTab = 'assist' | 'guitar' | 'versions';
+type RightPanelTab = 'assist' | 'guitar' | 'variants' | 'versions';
 
 export default function Home() {
   const [poemId, setPoemId] = useState<number | null>(null);
   const [title, setTitle] = useState('Untitled');
   const [content, setContent] = useState('');
   const [selectedText, setSelectedText] = useState('');
-  const [chordLine, setChordLine] = useState('');
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('assist');
   const initializingRef = useRef(false);
 
@@ -134,6 +134,16 @@ export default function Home() {
               Kytara
             </button>
             <button
+              onClick={() => setRightPanelTab('variants')}
+              className={`text-xs font-medium px-3 py-1 rounded transition ${
+                rightPanelTab === 'variants'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Varianty
+            </button>
+            <button
               onClick={() => setRightPanelTab('versions')}
               className={`text-xs font-medium px-3 py-1 rounded transition ${
                 rightPanelTab === 'versions'
@@ -149,8 +159,9 @@ export default function Home() {
             {rightPanelTab === 'assist' && (
               <AssistPanel selectedText={selectedText} onInsert={handleInsert} />
             )}
-            {rightPanelTab === 'guitar' && (
-              <GuitarPanel onChordLineChange={setChordLine} />
+            {rightPanelTab === 'guitar' && <GuitarPanel />}
+            {rightPanelTab === 'variants' && (
+              <VariantSidebar poemId={poemId || undefined} onRestore={handleRestore} />
             )}
             {rightPanelTab === 'versions' && (
               <VersionSidebar poemId={poemId || undefined} onRestore={handleRestore} />

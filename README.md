@@ -39,6 +39,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Architecture
 
+### Desktop Layout (≥1024px)
 ```
 3-Panel Layout:
 ┌─────────────────┬──────────────┬─────────────────┐
@@ -47,17 +48,41 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 │  (auto-save)    │  (syllables, │  (Gemini        │
 │                 │   rhymes,    │   suggestions)  │
 │                 │   stress)    │                 │
-│                 │              │  Version        │
-│                 │              │  Sidebar        │
+│                 │              │  Variants &     │
+│                 │              │  Versions       │
 └─────────────────┴──────────────┴─────────────────┘
 ```
 
+### Mobile Layout (<1024px)
+```
+Full-Screen Editor + Bottom Sheet Tools:
+
+┌─────────────────────────────┐
+│  Title                      │
+├─────────────────────────────┤
+│                             │
+│      EDITOR                 │
+│     (100% height)           │
+│                             │
+├─────────────────────────────┤
+│📊│✨│🎸│🔀│📜│  ← Tab Bar
+└─────────────────────────────┘
+     ↓ Tap Tab → Bottom Sheet ↓
+┌─────────────────────────────┐
+│ ─ ─ ─ Metriky              ×│
+├─────────────────────────────┤
+│  Metrics Panel (scrollable) │
+│  (drag down to close)       │
+└─────────────────────────────┘
+```
+
 **Tech Stack:**
-- **Frontend:** Next.js 15, React, Tailwind CSS
+- **Frontend:** Next.js 15, React, Tailwind CSS (mobile-first responsive)
 - **Backend:** Next.js API Routes (Node.js)
 - **Database:** SQLite + Drizzle ORM
 - **LLM:** Google Gemini (CLI + SDK)
 - **Metrics:** Algorithmic (no ML needed)
+- **Mobile UI:** Bottom Sheet drawer (iOS-style), responsive `lg:hidden` breakpoint
 
 ## API Endpoints
 
@@ -119,6 +144,38 @@ npm start
 # Lint
 npm run lint
 ```
+
+## Mobile Testing
+
+### iPhone Safari (localhost)
+1. **Desktop machine:** `npm run dev` (starts on `http://localhost:3000`)
+2. **Same WiFi network:** On iPhone, visit `http://<your-machine-ip>:3000`
+   ```bash
+   # Find your machine IP
+   ifconfig | grep "inet "  # macOS/Linux
+   ipconfig               # Windows
+   ```
+3. **Test flows:**
+   - **Edit mode:** Tap and hold to select text for suggestions
+   - **Bottom sheet:** Tap any of 5 tabs (📊 Metriky, ✨ Asist, 🎸 Kytara, 🔀 Varianty, 📜 Verze)
+   - **Drawer gesture:** Swipe down or tap × to close sheet
+   - **Keyboard:** Type in editor, verify bottom bar doesn't overlap
+
+### Chrome DevTools (Emulation)
+```bash
+# Simulate mobile on desktop
+npm run dev
+# Open http://localhost:3000
+# Press Ctrl+Shift+M (Windows) or Cmd+Shift+M (macOS) to toggle device toolbar
+# Select "iPhone 15" or similar (375×812 viewport)
+```
+
+### Key Mobile UX Checkpoints
+- ✓ Editor is full-screen (no horizontal scroll)
+- ✓ Bottom tab bar is always sticky (visible while scrolling editor)
+- ✓ Each sheet closes smoothly after action (e.g., insert suggestion)
+- ✓ Safe area respected (no content under notch/home bar)
+- ✓ Text inputs are keyboard-safe (not covered by on-screen keyboard)
 
 ## Troubleshooting
 

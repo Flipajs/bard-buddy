@@ -39,15 +39,15 @@ export default function Editor({
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <div className="border-b border-gray-200 p-4">
+      <div className="border-b border-gray-200 p-3 md:p-4">
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Název básně..."
-          className="w-full text-2xl font-bold outline-none bg-transparent"
+          className="w-full text-lg md:text-2xl font-bold outline-none bg-transparent"
         />
-        <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
+        <div className="flex justify-between items-center mt-2 text-xs md:text-sm text-gray-500">
           <span>Titul</span>
           {saving && <span className="text-amber-600">Ukládám...</span>}
         </div>
@@ -57,10 +57,10 @@ export default function Editor({
         value={content}
         onChange={(e) => setContent(e.target.value)}
         placeholder="Začni psát svou báseň..."
-        className="flex-1 p-4 outline-none resize-none font-mono text-sm leading-relaxed"
+        className="flex-1 p-3 md:p-4 outline-none resize-none font-mono text-sm leading-relaxed"
       />
 
-      <div className="border-t border-gray-200 p-4 text-sm text-gray-600">
+      <div className="border-t border-gray-200 p-3 md:p-4 text-xs md:text-sm text-gray-600">
         Řádků: {content.split('\n').length} | Znaků: {content.length}
       </div>
     </div>

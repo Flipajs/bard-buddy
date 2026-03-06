@@ -323,6 +323,52 @@ and compare alternatives side-by-side without leaving the editor flow.
 
 ---
 
+## ADR-012: Mobile-First Responsive Layout
+
+**Status:** Accepted
+
+**Context:** Original 3-column layout (editor + metrics + assist) is unusable on mobile (iPhone Safari).
+Need live lyric-writing experience on phones without sacrificing desktop capabilities.
+
+**Decision:** Implement **responsive breakpoint at 1024px (lg Tailwind)** with:
+- **Desktop (≥1024px)**: Keep existing 3-column layout unchanged
+- **Mobile (<1024px)**:
+  - Full-screen editor (prioritize writing space)
+  - Sticky bottom tab bar (5 buttons: Metrics, Assist, Guitar, Variants, Versions)
+  - Bottom Sheet drawer (iOS-style) for tool panels
+  - Touch-friendly spacing (larger buttons, 44px+ tap targets)
+
+**Components:**
+- `BottomSheet.tsx` — Reusable drawer component (backdrop, handle, close button)
+- `page.tsx` — State: `mobileSheet` tracks open panel, responsive visibility with `hidden lg:flex`
+
+**Rationale:**
+- ✓ Editor gets 100% vertical space on mobile (critical for live writing)
+- ✓ Bottom sheet pattern familiar to iOS users (low cognitive load)
+- ✓ No desktop experience change (backward compatible)
+- ✓ Tailwind `lg:hidden` / `hidden lg:flex` provides clean breakpoint
+- ✓ Tab buttons are emoji-labeled for quick visual scanning
+- ✓ Drawer closes on backdrop tap (standard mobile UX)
+
+**Mobile UX Flow:**
+1. Open app → full-screen editor
+2. Tap "Metriky" button → bottom sheet slides up with metrics
+3. Swipe down or tap × to close → back to editor
+4. Tap "✨ Asist" → drawer opens with suggestions
+5. Tap suggestion → inserted into editor, sheet closes automatically
+
+**Touch Safety (iOS Safe Area):**
+- `pb-8` on sheet content (avoid keyboard overlap)
+- Buttons minimum 44×44px (iOS HIG recommendation)
+- Sticky bottom bar fixed position (don't scroll away during typing)
+
+**Alternatives considered:**
+- Split layout (50/50 editor+tools): Too cramped on mobile, hard to write
+- Full-screen tabs (each tool full screen): Too many taps, breaks flow
+- Sidebar swipe drawer: Conflicts with iOS Safari gestures
+
+---
+
 ## Next Review
 
 These decisions should be reviewed if:
@@ -331,5 +377,6 @@ These decisions should be reviewed if:
 - Database grows beyond single-file capacity
 - Multi-user concurrency is needed
 - Key detection accuracy drops below 70% in real-world use
+- Mobile usage patterns change (e.g., users want side-by-side metrics)
 
-Planned review: After phase 1 (MVP guitar mode) is complete.
+Planned review: After mobile testing with real users on iPhone Safari.

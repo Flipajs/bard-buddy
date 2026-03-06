@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
       }
 
       const stmt = db.prepare(
-        'SELECT id, content, created_at FROM versions WHERE poem_id = ? ORDER BY created_at DESC LIMIT 5'
+        'SELECT id, content, created_at FROM versions WHERE poem_id = ? ORDER BY created_at DESC LIMIT 20'
       );
       const versions = stmt.all(poemId) as Array<{
         id: number;
@@ -96,6 +96,63 @@ export async function POST(req: NextRequest) {
       }>;
 
       return NextResponse.json({ success: true, versions });
+    }
+
+    if (action === 'load-poem') {
+      if (!poemId) {
+        return NextResponse.json(
+          { error: 'poemId is required' },
+          { status: 400 }
+        );
+      }
+
+      const poemStmt = db.prepare('SELECT id, title, updated_at FROM poems WHERE id = ?');
+      const poem = poemStmt.get(poemId) as
+        | { id: number; title: string; updated_at: number }
+        | undefined;
+
+      if (!poem) {
+        return NextResponse.json({ error: 'Poem not found' }, { status: 404 });
+      }
+
+      const latestStmt = db.prepare(
+        'SELECT content, created_at FROM versions WHERE poem_id = ? ORDER BY created_at DESC LIMIT 1'
+      );
+      const latest = latestStmt.get(poemId) as { content: string; created_at: number } | undefined;
+
+      return NextResponse.json({
+        success: true,
+        poem,
+        content: latest?.content || '',
+      });
+    }
+
+    if (action === 'list-poems') {
+      const stmt = db.prepare(`
+        SELECT
+          p.id,
+          p.title,
+          p.updated_at,
+          (
+            SELECT v.content
+            FROM versions v
+            WHERE v.poem_id = p.id
+            ORDER BY v.created_at DESC
+            LIMIT 1
+          ) as latest_content
+        FROM poems p
+        ORDER BY p.updated_at DESC
+        LIMIT 20
+      `);
+
+      const poems = stmt.all() as Array<{
+        id: number;
+        title: string;
+        updated_at: number;
+        latest_content: string | null;
+      }>;
+
+      return NextResponse.json({ success: true, poems });
     }
 
     return NextResponse.json(

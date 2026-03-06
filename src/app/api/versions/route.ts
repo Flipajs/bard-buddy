@@ -8,6 +8,31 @@ function getDb() {
   const dbPath = path.join(process.cwd(), 'bard.db');
   const db = new Database(dbPath);
   db.pragma('journal_mode = WAL');
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS poems (
+      id INTEGER PRIMARY KEY,
+      title TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS versions (
+      id INTEGER PRIMARY KEY,
+      poem_id INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY(poem_id) REFERENCES poems(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS tags (
+      id INTEGER PRIMARY KEY,
+      poem_id INTEGER NOT NULL,
+      label TEXT NOT NULL,
+      FOREIGN KEY(poem_id) REFERENCES poems(id)
+    );
+  `);
+
   return db;
 }
 

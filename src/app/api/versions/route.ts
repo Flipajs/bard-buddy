@@ -60,20 +60,54 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'save-version') {
-      if (!poemId || !content) {
+      if (!poemId || content === undefined) {
         return NextResponse.json(
           { error: 'poemId and content are required' },
           { status: 400 }
         );
       }
 
+      const now = Date.now();
       const stmt = db.prepare(
         'INSERT INTO versions (poem_id, content, created_at) VALUES (?, ?, ?)'
       );
-      stmt.run(poemId, content, Date.now());
+      stmt.run(poemId, content, now);
 
-      const updateStmt = db.prepare('UPDATE poems SET updated_at = ? WHERE id = ?');
-      updateStmt.run(Date.now(), poemId);
+      if (title && title.trim()) {
+        const updateStmt = db.prepare('UPDATE poems SET title = ?, updated_at = ? WHERE id = ?');
+        updateStmt.run(title.trim(), now, poemId);
+      } else {
+        const updateStmt = db.prepare('UPDATE poems SET updated_at = ? WHERE id = ?');
+        updateStmt.run(now, poemId);
+      }
+
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'rename-poem') {
+      if (!poemId || !title?.trim()) {
+        return NextResponse.json(
+          { error: 'poemId and title are required' },
+          { status: 400 }
+        );
+      }
+
+      const stmt = db.prepare('UPDATE poems SET title = ?, updated_at = ? WHERE id = ?');
+      stmt.run(title.trim(), Date.now(), poemId);
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'delete-poem') {
+      if (!poemId) {
+        return NextResponse.json(
+          { error: 'poemId is required' },
+          { status: 400 }
+        );
+      }
+
+      db.prepare('DELETE FROM versions WHERE poem_id = ?').run(poemId);
+      db.prepare('DELETE FROM tags WHERE poem_id = ?').run(poemId);
+      db.prepare('DELETE FROM poems WHERE id = ?').run(poemId);
 
       return NextResponse.json({ success: true });
     }

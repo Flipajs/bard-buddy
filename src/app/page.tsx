@@ -86,6 +86,24 @@ export default function Home() {
     await fetchRecentPoems();
   };
 
+  const deleteCurrentPoem = async () => {
+    if (!poemId) return;
+    const ok = window.confirm('Opravdu smazat aktuální projekt?');
+    if (!ok) return;
+
+    const res = await fetch('/api/versions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete-poem', poemId }),
+    });
+
+    if (!res.ok) return;
+
+    localStorage.removeItem('bardBuddy.activePoemId');
+    await fetchRecentPoems();
+    await createNewPoem();
+  };
+
   // Initialize poem on mount
   useEffect(() => {
     if (initializingRef.current) return;
@@ -136,6 +154,7 @@ export default function Home() {
           body: JSON.stringify({
             action: 'save-version',
             poemId,
+            title: newTitle,
             content: newContent,
           }),
         });
@@ -203,12 +222,20 @@ export default function Home() {
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">🎵 bard-buddy</h1>
             <p className="text-xs md:text-sm text-gray-600">Asistent pro psaní poezie a lyrics v češtině</p>
           </div>
-          <button
-            onClick={createNewPoem}
-            className="text-xs md:text-sm px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            + Nový projekt
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={createNewPoem}
+              className="text-xs md:text-sm px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              + Nový projekt
+            </button>
+            <button
+              onClick={deleteCurrentPoem}
+              className="text-xs md:text-sm px-3 py-2 bg-red-50 text-red-700 border border-red-200 rounded hover:bg-red-100"
+            >
+              Smazat
+            </button>
+          </div>
         </div>
 
         {recentPoems.length > 0 && (

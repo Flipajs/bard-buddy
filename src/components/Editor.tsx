@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { analyzePoem } from '@/lib/czech-metrics';
 
 interface EditorProps {
   initialTitle?: string;
@@ -16,7 +17,33 @@ export default function Editor({
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
   const [saving, setSaving] = useState(false);
+  const [showInlineMetrics, setShowInlineMetrics] = useState(true);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const lineMetrics = useMemo(() => {
+    const lines = content.split('\n');
+    return lines.map((line, index) => {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        return {
+          index,
+          text: line,
+          syllables: 0,
+          singabilityScore: 0,
+          rhymeEnding: '',
+        };
+      }
+
+      const analyzed = analyzePoem(trimmed)[0];
+      return {
+        index,
+        text: line,
+        syllables: analyzed?.syllables ?? 0,
+        singabilityScore: analyzed?.singabilityScore ?? 0,
+        rhymeEnding: analyzed?.rhymeEnding ?? '',
+      };
+    });
+  }, [content]);
 
   useEffect(() => {
     // Auto-save every 3 seconds
@@ -59,6 +86,37 @@ export default function Editor({
         placeholder="Začni psát svou báseň..."
         className="flex-1 p-3 md:p-4 outline-none resize-none font-mono text-sm leading-relaxed"
       />
+
+      <div className="border-t border-gray-200 bg-gray-50">
+        <button
+          onClick={() => setShowInlineMetrics((v) => !v)}
+          className="w-full text-left px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-100"
+        >
+          {showInlineMetrics ? '▾' : '▸'} Inline metriky řádků
+        </button>
+
+        {showInlineMetrics && (
+          <div className="max-h-40 overflow-y-auto px-3 md:px-4 pb-2 space-y-1">
+            {lineMetrics.map((line) => (
+              <div key={line.index} className="flex items-center gap-2 text-[11px] md:text-xs">
+                <span className="w-6 text-gray-400">{line.index + 1}.</span>
+                <span className="truncate flex-1 text-gray-600">{line.text.trim() || '—'}</span>
+                <span className="px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
+                  {line.syllables} slab.
+                </span>
+                <span className="px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
+                  {(line.singabilityScore * 100).toFixed(0)}%
+                </span>
+                {line.rhymeEnding ? (
+                  <span className="px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
+                    -{line.rhymeEnding}
+                  </span>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="border-t border-gray-200 p-3 md:p-4 text-xs md:text-sm text-gray-600">
         Řádků: {content.split('\n').length} | Znaků: {content.length}

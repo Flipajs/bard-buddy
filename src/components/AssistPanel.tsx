@@ -13,12 +13,13 @@ interface ReferenceItem {
 interface AssistPanelProps {
   selectedText: string;
   poemId?: number;
+  selectedRhymeEnding?: string;
   onInsert?: (text: string) => void;
 }
 
 type Mode = 'alternatives' | 'continuation' | 'chorus';
 
-export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPanelProps) {
+export default function AssistPanel({ selectedText, poemId, selectedRhymeEnding, onInsert }: AssistPanelProps) {
   const [mode, setMode] = useState<Mode>('alternatives');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -52,10 +53,17 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
   useEffect(() => {
     const w = selectedText.trim().split(/\s+/).filter(Boolean).pop() || '';
     const cleaned = w.toLowerCase().replace(/[^\p{L}]/gu, '');
-    if (cleaned.length >= 2) {
+    if (cleaned.length >= 2 && !selectedRhymeEnding) {
       setRhymeEnding(cleaned.slice(-3));
     }
-  }, [selectedText]);
+  }, [selectedText, selectedRhymeEnding]);
+
+  useEffect(() => {
+    if (!selectedRhymeEnding) return;
+    setRhymeEnding(selectedRhymeEnding);
+    void generateRhymeBank(selectedRhymeEnding);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRhymeEnding]);
 
   const addReference = async () => {
     if (!newRefTitle.trim() || !newRefContent.trim()) return;
@@ -153,8 +161,8 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
     }
   };
 
-  const generateRhymeBank = async () => {
-    const ending = rhymeEnding.trim().toLowerCase();
+  const generateRhymeBank = async (overrideEnding?: string) => {
+    const ending = (overrideEnding ?? rhymeEnding).trim().toLowerCase();
     if (!ending) return;
 
     setRhymeLoading(true);
@@ -365,7 +373,7 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
             className="flex-1 text-xs border rounded px-2 py-1"
           />
           <button
-            onClick={generateRhymeBank}
+            onClick={() => void generateRhymeBank()}
             disabled={rhymeLoading || !rhymeEnding.trim()}
             className="text-xs px-2 py-1 rounded bg-purple-600 text-white disabled:bg-gray-400"
           >

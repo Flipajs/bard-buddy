@@ -9,6 +9,7 @@ interface EditorProps {
   onSave?: (title: string, content: string) => void;
   onSavingChange?: (saving: boolean) => void;
   onSelectionChange?: (text: string) => void;
+  onRhymePick?: (rhymeEnding: string) => void;
 }
 
 export default function Editor({
@@ -17,6 +18,7 @@ export default function Editor({
   onSave,
   onSavingChange,
   onSelectionChange,
+  onRhymePick,
 }: EditorProps) {
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
@@ -288,9 +290,10 @@ export default function Editor({
 
                 <div className="text-[11px] text-right overflow-hidden min-w-0">
                   {line.lastWord ? (
-                    <span
+                    <button
                       title={`${line.lastWord}${line.rhymeEnding ? ` · -${line.rhymeEnding}` : ''}`}
-                      className={`inline-block max-w-[106px] truncate px-1.5 py-0.5 rounded border ${
+                      onClick={() => line.rhymeEnding && onRhymePick?.(line.rhymeEnding)}
+                      className={`inline-block max-w-[106px] truncate px-1.5 py-0.5 rounded border hover:brightness-95 ${
                         line.rhymeKey && rhymeColorClass.get(line.rhymeKey)
                           ? rhymeColorClass.get(line.rhymeKey)
                           : 'bg-indigo-50 border-indigo-200 text-indigo-700'
@@ -298,7 +301,7 @@ export default function Editor({
                     >
                       {line.lastWord}
                       {line.rhymeEnding ? ` · -${line.rhymeEnding}` : ''}
-                    </span>
+                    </button>
                   ) : (
                     <span className="inline-block w-[72px] px-1 py-0.5 rounded bg-white border border-gray-200 text-gray-400 text-right">—</span>
                   )}

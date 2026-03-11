@@ -24,6 +24,7 @@ export default function Home() {
   const [title, setTitle] = useState('Untitled');
   const [content, setContent] = useState('');
   const [selectedText, setSelectedText] = useState('');
+  const [selectedRhymeEnding, setSelectedRhymeEnding] = useState('');
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('assist');
   const [mobileSheet, setMobileSheet] = useState<MobileToolTab | null>(null);
   const [recentPoems, setRecentPoems] = useState<RecentPoem[]>([]);
@@ -192,6 +193,7 @@ export default function Home() {
           <AssistPanel
             selectedText={selectedText}
             poemId={poemId || undefined}
+            selectedRhymeEnding={selectedRhymeEnding}
             onInsert={handleInsert}
           />
         );
@@ -283,6 +285,7 @@ export default function Home() {
             onSave={handleSave}
             onSavingChange={setIsSaving}
             onSelectionChange={setSelectedText}
+            onRhymePick={setSelectedRhymeEnding}
           />
         </div>
 
@@ -299,6 +302,7 @@ export default function Home() {
               <AssistPanel
                 selectedText={selectedText}
                 poemId={poemId || undefined}
+                selectedRhymeEnding={selectedRhymeEnding}
                 onInsert={handleInsert}
               />
             )}

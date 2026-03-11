@@ -288,6 +288,7 @@ export default function Home() {
             initialContent={content}
             onSave={handleSave}
             onSavingChange={setIsSaving}
+            onSelectionChange={setSelectedText}
           />
         </div>
 

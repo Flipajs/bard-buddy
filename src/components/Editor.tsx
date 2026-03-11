@@ -261,7 +261,7 @@ export default function Editor({
                 }
               }}
               placeholder={line.index === 0 ? 'Začni psát svou báseň...' : ''}
-              className="font-mono text-sm leading-relaxed bg-transparent outline-none w-full"
+              className="font-mono tabular-nums text-sm leading-relaxed bg-transparent outline-none w-full"
             />
 
             <div className="text-[11px] text-right">

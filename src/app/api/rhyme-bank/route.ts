@@ -18,7 +18,7 @@ function fallbackCandidates(rhymeEnding: string, text: string, refs: string[]): 
   const near = words.filter((w) => w.slice(-2) === minTail.slice(-2));
 
   const unique = Array.from(new Set([...direct, ...near]));
-  return unique.slice(0, 20);
+  return unique.slice(0, 30);
 }
 
 export async function POST(req: NextRequest) {
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       cleanEnding,
       text || '',
       referenceTexts,
-      20
+      30
     );
 
     const timeoutPromise = new Promise<string[]>((resolve) => {

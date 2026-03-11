@@ -8,7 +8,7 @@ interface EditorProps {
   initialContent?: string;
   onSave?: (title: string, content: string) => void;
   onSavingChange?: (saving: boolean) => void;
-  onSelectionChange?: (text: string) => void;
+  onSelectionChange?: (payload: { text: string; start: number; end: number }) => void;
   onRhymePick?: (rhymeEnding: string) => void;
 }
 
@@ -236,7 +236,7 @@ export default function Editor({
                 const el = e.currentTarget;
                 const s = el.selectionStart ?? 0;
                 const t = el.selectionEnd ?? 0;
-                onSelectionChange?.(el.value.slice(s, t));
+                onSelectionChange?.({ text: el.value.slice(s, t), start: s, end: t });
               }}
               onScroll={(e) => {
                 const top = e.currentTarget.scrollTop;

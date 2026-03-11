@@ -24,6 +24,7 @@ export default function Home() {
   const [title, setTitle] = useState('Untitled');
   const [content, setContent] = useState('');
   const [selectedText, setSelectedText] = useState('');
+  const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
   const [selectedRhymeEnding, setSelectedRhymeEnding] = useState('');
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('assist');
   const [mobileSheet, setMobileSheet] = useState<MobileToolTab | null>(null);
@@ -176,6 +177,11 @@ export default function Home() {
 
   const handleInsert = (text: string) => {
     setContent((prev) => {
+      if (selectionRange && selectionRange.end >= selectionRange.start) {
+        const before = prev.slice(0, selectionRange.start);
+        const after = prev.slice(selectionRange.end);
+        return `${before}${text}${after}`;
+      }
       if (selectedText && prev.includes(selectedText)) {
         return prev.replace(selectedText, text);
       }
@@ -285,7 +291,10 @@ export default function Home() {
             initialContent={content}
             onSave={handleSave}
             onSavingChange={setIsSaving}
-            onSelectionChange={setSelectedText}
+            onSelectionChange={({ text, start, end }) => {
+              setSelectedText(text);
+              setSelectionRange({ start, end });
+            }}
             onRhymePick={setSelectedRhymeEnding}
           />
         </div>

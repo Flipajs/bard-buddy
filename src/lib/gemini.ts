@@ -117,7 +117,7 @@ export async function generateRhymeCandidates(
   rhymeEnding: string,
   contextText: string,
   references: string[] = [],
-  count: number = 20
+  count: number = 30
 ): Promise<string[]> {
   const prompt = `You are a Czech lyric-writing assistant.
 

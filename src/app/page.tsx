@@ -291,10 +291,6 @@ export default function Home() {
           />
         </div>
 
-        <div className="hidden lg:flex w-80 border-r border-gray-200 bg-white overflow-hidden flex-col">
-          <MetricsPanel text={content} />
-        </div>
-
         <div className="hidden lg:flex w-80 bg-white overflow-hidden flex-col">
           <div className="border-b border-gray-200 p-2 flex gap-2">
             <button onClick={() => setRightPanelTab('assist')} className={`text-xs font-medium px-3 py-1 rounded transition ${rightPanelTab === 'assist' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Asistace</button>

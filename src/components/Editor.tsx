@@ -22,13 +22,20 @@ export default function Editor({
   const [showInlineMetrics, setShowInlineMetrics] = useState(true);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const latestTitleRef = useRef(title);
+  const latestContentRef = useRef(content);
   const latestOnSaveRef = useRef(onSave);
   const latestOnSavingChangeRef = useRef(onSavingChange);
   const hasEditedRef = useRef(false);
+  const dirtyRef = useRef(false);
+  const saveInFlightRef = useRef(false);
 
   useEffect(() => {
     latestTitleRef.current = title;
   }, [title]);
+
+  useEffect(() => {
+    latestContentRef.current = content;
+  }, [content]);
 
   useEffect(() => {
     latestOnSaveRef.current = onSave;
@@ -63,34 +70,46 @@ export default function Editor({
     });
   }, [content]);
 
+  const runSave = async (snapshotContent: string) => {
+    if (saveInFlightRef.current) return;
+
+    saveInFlightRef.current = true;
+    setSaving(true);
+    latestOnSavingChangeRef.current?.(true);
+
+    try {
+      await Promise.resolve(
+        latestOnSaveRef.current?.(latestTitleRef.current, snapshotContent)
+      );
+
+      if (latestContentRef.current === snapshotContent) {
+        dirtyRef.current = false;
+      }
+    } catch (error) {
+      console.error('Save failed:', error);
+      dirtyRef.current = true;
+    } finally {
+      saveInFlightRef.current = false;
+      setSaving(false);
+      latestOnSavingChangeRef.current?.(dirtyRef.current);
+    }
+  };
+
   useEffect(() => {
-    // Auto-save every 3 seconds, triggered by document(content) changes.
+    // Hybrid: fast debounce save after pause + periodic safety save.
     if (!hasEditedRef.current) return;
+
+    dirtyRef.current = true;
+    latestOnSavingChangeRef.current?.(true);
 
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
 
     const snapshotContent = content;
-
-    // During debounce we keep project-switch lock ON to prevent data loss.
-    setSaving(false);
-    latestOnSavingChangeRef.current?.(true);
-
-    saveTimeoutRef.current = setTimeout(async () => {
-      setSaving(true);
-      latestOnSavingChangeRef.current?.(true);
-      try {
-        await Promise.resolve(
-          latestOnSaveRef.current?.(latestTitleRef.current, snapshotContent)
-        );
-      } catch (error) {
-        console.error('Save failed:', error);
-      } finally {
-        setSaving(false);
-        latestOnSavingChangeRef.current?.(false);
-      }
-    }, 3000);
+    saveTimeoutRef.current = setTimeout(() => {
+      void runSave(snapshotContent);
+    }, 1200);
 
     return () => {
       if (saveTimeoutRef.current) {
@@ -98,6 +117,15 @@ export default function Editor({
       }
     };
   }, [content]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!dirtyRef.current || saveInFlightRef.current) return;
+      void runSave(latestContentRef.current);
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     return () => {

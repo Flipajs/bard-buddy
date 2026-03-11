@@ -3,11 +3,35 @@ import { generateRhymeCandidates } from '@/lib/gemini';
 
 export const runtime = 'nodejs';
 
+function normalizeCsTail(w: string): string {
+  const tail = w.slice(-4).toLowerCase();
+  const deaccent = tail
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ch/g, 'x');
+  return deaccent
+    .replace(/[dt]$/g, 'T')
+    .replace(/[sz]$/g, 'S')
+    .replace(/[bp]$/g, 'P');
+}
+
+function normalizeEnTail(w: string): string {
+  const tail = w.slice(-4);
+  const vowelsNorm = tail.replace(/[aeiouy]/g, 'V');
+  const lastConsonant = [...tail].reverse().find((c) => !'aeiouy'.includes(c)) || '';
+  return `${vowelsNorm}|${lastConsonant}`;
+}
+
+function detectLikelyLang(text: string): 'cs' | 'en' {
+  return /[áéěíóúůýčďňřšťž]/i.test(text) ? 'cs' : 'en';
+}
+
 function fallbackCandidates(rhymeEnding: string, text: string, refs: string[]): string[] {
   const ending = rhymeEnding.toLowerCase();
   const minTail = ending.length >= 3 ? ending.slice(-3) : ending;
   const tail2 = minTail.slice(-2);
   const corpus = [text, ...refs].join('\n').toLowerCase();
+  const lang = detectLikelyLang(corpus + ' ' + ending);
 
   const words = corpus
     .split(/\s+/)
@@ -17,20 +41,15 @@ function fallbackCandidates(rhymeEnding: string, text: string, refs: string[]): 
 
   const direct = words.filter((w) => w.endsWith(minTail));
 
-  // Near/slant heuristic for English-like words:
-  // compare normalized vowel skeleton in tail + last consonant.
-  const normalizeTail = (w: string) => {
-    const tail = w.slice(-4);
-    const vowelsNorm = tail.replace(/[aeiouy]/g, 'V');
-    const lastConsonant = [...tail].reverse().find((c) => !'aeiouy'.includes(c)) || '';
-    return `${vowelsNorm}|${lastConsonant}`;
-  };
+  const targetNorm =
+    lang === 'cs'
+      ? normalizeCsTail(minTail.padStart(4, minTail))
+      : normalizeEnTail(minTail.padStart(4, minTail));
 
-  const targetNorm = normalizeTail(minTail.padStart(4, minTail));
   const near = words.filter((w) => {
     if (w.endsWith(minTail)) return false;
     if (w.slice(-2) === tail2) return true;
-    return normalizeTail(w) === targetNorm;
+    return (lang === 'cs' ? normalizeCsTail(w) : normalizeEnTail(w)) === targetNorm;
   });
 
   const unique = Array.from(new Set([...direct, ...near]));

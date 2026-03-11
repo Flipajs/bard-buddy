@@ -22,11 +22,21 @@ export default function Editor({
   const [showInlineMetrics, setShowInlineMetrics] = useState(true);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const latestTitleRef = useRef(title);
+  const latestOnSaveRef = useRef(onSave);
+  const latestOnSavingChangeRef = useRef(onSavingChange);
   const hasEditedRef = useRef(false);
 
   useEffect(() => {
     latestTitleRef.current = title;
   }, [title]);
+
+  useEffect(() => {
+    latestOnSaveRef.current = onSave;
+  }, [onSave]);
+
+  useEffect(() => {
+    latestOnSavingChangeRef.current = onSavingChange;
+  }, [onSavingChange]);
 
   const lineMetrics = useMemo(() => {
     const lines = content.split('\n');
@@ -65,18 +75,20 @@ export default function Editor({
 
     // During debounce we keep project-switch lock ON to prevent data loss.
     setSaving(false);
-    onSavingChange?.(true);
+    latestOnSavingChangeRef.current?.(true);
 
     saveTimeoutRef.current = setTimeout(async () => {
       setSaving(true);
-      onSavingChange?.(true);
+      latestOnSavingChangeRef.current?.(true);
       try {
-        await Promise.resolve(onSave?.(latestTitleRef.current, snapshotContent));
+        await Promise.resolve(
+          latestOnSaveRef.current?.(latestTitleRef.current, snapshotContent)
+        );
       } catch (error) {
         console.error('Save failed:', error);
       } finally {
         setSaving(false);
-        onSavingChange?.(false);
+        latestOnSavingChangeRef.current?.(false);
       }
     }, 3000);
 
@@ -85,13 +97,13 @@ export default function Editor({
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [content, onSave, onSavingChange]);
+  }, [content]);
 
   useEffect(() => {
     return () => {
-      onSavingChange?.(false);
+      latestOnSavingChangeRef.current?.(false);
     };
-  }, [onSavingChange]);
+  }, []);
 
   return (
     <div className="flex flex-col h-full bg-white">

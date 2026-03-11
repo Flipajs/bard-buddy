@@ -23,29 +23,29 @@ export function getChatModel() {
 }
 
 /**
- * Generate content using Gemini CLI (primary)
- * Falls back to SDK if CLI fails
+ * Generate content using Gemini SDK via GEMINI_API_KEY (primary)
+ * Falls back to Gemini CLI if SDK fails
  */
 export async function generateContent(prompt: string): Promise<string> {
-  // Try CLI first (like Scholia)
+  // Try SDK first (lower startup overhead than spawning CLI process)
   try {
-    const { stdout } = await execFileAsync('gemini', ['-p', prompt], {
-      cwd: process.cwd(),
-      timeout: 120000,
-      maxBuffer: 1024 * 1024,
-    });
-    return stdout.trim();
-  } catch (cliErr) {
-    console.warn('Gemini CLI failed, falling back to SDK:', cliErr);
-    
-    // Fallback to SDK
+    const model = getChatModel();
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    return text;
+  } catch (sdkErr) {
+    console.warn('Gemini SDK failed, falling back to CLI:', sdkErr);
+
+    // Fallback to CLI
     try {
-      const model = getChatModel();
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
-      return text;
-    } catch (sdkErr) {
-      console.error('Both Gemini CLI and SDK failed:', sdkErr);
+      const { stdout } = await execFileAsync('gemini', ['-p', prompt], {
+        cwd: process.cwd(),
+        timeout: 120000,
+        maxBuffer: 1024 * 1024,
+      });
+      return stdout.trim();
+    } catch (cliErr) {
+      console.error('Both Gemini SDK and CLI failed:', cliErr);
       throw new Error('Failed to generate content with Gemini');
     }
   }

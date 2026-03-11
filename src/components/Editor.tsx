@@ -24,7 +24,8 @@ export default function Editor({
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const metricsScrollRef = useRef<HTMLDivElement | null>(null);
+  const gutterScrollRef = useRef<HTMLDivElement | null>(null);
+  const insightsScrollRef = useRef<HTMLDivElement | null>(null);
 
   const latestTitleRef = useRef(title);
   const latestContentRef = useRef(content);
@@ -194,49 +195,82 @@ export default function Editor({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 grid grid-cols-[1fr_304px]">
+      <div
+        className="flex-1 min-h-0 grid grid-cols-[1fr_304px]"
+        style={{
+          ['--bb-row-h' as any]: '24px',
+          ['--bb-head-h' as any]: '31px',
+        }}
+      >
         <div className="flex flex-col min-h-0 border-r border-gray-200">
-          <div className="h-[31px] border-b border-gray-200 bg-white" />
-          <textarea
-            ref={textareaRef}
-            wrap="off"
-            value={content}
-            onChange={(e) => {
-              hasEditedRef.current = true;
-              setContent(e.target.value);
-            }}
-            onSelect={(e) => {
-              const el = e.currentTarget;
-              const s = el.selectionStart ?? 0;
-              const t = el.selectionEnd ?? 0;
-              onSelectionChange?.(el.value.slice(s, t));
-            }}
-            onScroll={(e) => {
-              if (metricsScrollRef.current) {
-                metricsScrollRef.current.scrollTop = e.currentTarget.scrollTop;
-              }
-            }}
-            placeholder="Začni psát svou báseň..."
-            style={{
-              backgroundImage:
-                'repeating-linear-gradient(to bottom, #ffffff 0px, #ffffff 24px, #f9fafb 24px, #f9fafb 48px)',
-            }}
-            className="flex-1 px-3 md:px-4 py-0 outline-none resize-none overflow-x-auto whitespace-pre font-mono tabular-nums text-sm leading-6"
-          />
+          <div className="h-[var(--bb-head-h)] border-b border-gray-200 bg-white" />
+
+          <div className="flex-1 min-h-0 grid grid-cols-[46px_1fr]">
+            <div
+              ref={gutterScrollRef}
+              className="overflow-y-auto border-r border-gray-100 bg-gray-50"
+            >
+              {lineMetrics.map((line) => (
+                <div
+                  key={`n-${line.index}`}
+                  className={`h-[var(--bb-row-h)] px-2 text-[11px] flex items-center justify-end text-gray-500 border-b border-gray-100 ${
+                    line.index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                  }`}
+                >
+                  {line.index + 1}
+                </div>
+              ))}
+            </div>
+
+            <textarea
+              ref={textareaRef}
+              wrap="off"
+              value={content}
+              onChange={(e) => {
+                hasEditedRef.current = true;
+                setContent(e.target.value);
+              }}
+              onSelect={(e) => {
+                const el = e.currentTarget;
+                const s = el.selectionStart ?? 0;
+                const t = el.selectionEnd ?? 0;
+                onSelectionChange?.(el.value.slice(s, t));
+              }}
+              onScroll={(e) => {
+                const top = e.currentTarget.scrollTop;
+                if (gutterScrollRef.current) gutterScrollRef.current.scrollTop = top;
+                if (insightsScrollRef.current) insightsScrollRef.current.scrollTop = top;
+              }}
+              placeholder="Začni psát svou báseň..."
+              style={{
+                backgroundImage:
+                  'repeating-linear-gradient(to bottom, #ffffff 0px, #ffffff 24px, #f9fafb 24px, #f9fafb 48px)',
+              }}
+              className="flex-1 px-3 md:px-4 py-0 outline-none resize-none overflow-x-auto whitespace-pre font-mono tabular-nums text-sm leading-6"
+            />
+          </div>
         </div>
 
         <div className="flex flex-col min-h-0 bg-gray-50">
-          <div className="sticky top-0 z-10 grid grid-cols-[74px_86px_132px] items-center gap-2 px-3 py-1.5 border-b border-gray-200 bg-white text-[11px] font-semibold text-gray-600">
+          <div className="sticky top-0 z-10 grid grid-cols-[74px_86px_132px] h-[var(--bb-head-h)] items-center gap-2 px-3 py-1.5 border-b border-gray-200 bg-white text-[11px] font-semibold text-gray-600">
             <span className="text-right">Slab.</span>
             <span className="text-right">Zpěv.</span>
             <span className="text-right">Konec / rým</span>
           </div>
 
-          <div ref={metricsScrollRef} className="flex-1 overflow-y-auto">
+          <div
+            ref={insightsScrollRef}
+            className="flex-1 overflow-y-auto"
+            onScroll={(e) => {
+              const top = (e.currentTarget as HTMLDivElement).scrollTop;
+              if (textareaRef.current) textareaRef.current.scrollTop = top;
+              if (gutterScrollRef.current) gutterScrollRef.current.scrollTop = top;
+            }}
+          >
             {lineMetrics.map((line) => (
               <div
                 key={line.index}
-                className={`grid grid-cols-[74px_86px_132px] items-center gap-2 px-3 h-6 border-b border-gray-100 ${
+                className={`grid grid-cols-[74px_86px_132px] items-center gap-2 px-3 h-[var(--bb-row-h)] border-b border-gray-100 ${
                   line.index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                 }`}
               >

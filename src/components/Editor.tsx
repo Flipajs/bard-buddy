@@ -7,18 +7,26 @@ interface EditorProps {
   initialTitle?: string;
   initialContent?: string;
   onSave?: (title: string, content: string) => void;
+  onSavingChange?: (saving: boolean) => void;
 }
 
 export default function Editor({
   initialTitle = 'Untitled',
   initialContent = '',
   onSave,
+  onSavingChange,
 }: EditorProps) {
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
   const [saving, setSaving] = useState(false);
   const [showInlineMetrics, setShowInlineMetrics] = useState(true);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const latestTitleRef = useRef(title);
+  const hasEditedRef = useRef(false);
+
+  useEffect(() => {
+    latestTitleRef.current = title;
+  }, [title]);
 
   const lineMetrics = useMemo(() => {
     const lines = content.split('\n');
@@ -46,15 +54,19 @@ export default function Editor({
   }, [content]);
 
   useEffect(() => {
-    // Auto-save every 3 seconds
+    // Auto-save every 3 seconds, triggered by document(content) changes.
+    if (!hasEditedRef.current) return;
+
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
 
     setSaving(true);
+    onSavingChange?.(true);
     saveTimeoutRef.current = setTimeout(() => {
-      onSave?.(title, content);
+      onSave?.(latestTitleRef.current, content);
       setSaving(false);
+      onSavingChange?.(false);
     }, 3000);
 
     return () => {
@@ -62,7 +74,7 @@ export default function Editor({
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [title, content, onSave]);
+  }, [content, onSave, onSavingChange]);
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -82,7 +94,10 @@ export default function Editor({
 
       <textarea
         value={content}
-        onChange={(e) => setContent(e.target.value)}
+        onChange={(e) => {
+          hasEditedRef.current = true;
+          setContent(e.target.value);
+        }}
         placeholder="Začni psát svou báseň..."
         className="flex-1 p-3 md:p-4 outline-none resize-none font-mono text-sm leading-relaxed"
       />

@@ -28,6 +28,7 @@ export default function Home() {
   const [mobileSheet, setMobileSheet] = useState<MobileToolTab | null>(null);
   const [recentPoems, setRecentPoems] = useState<RecentPoem[]>([]);
   const [editorKey, setEditorKey] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
   const initializingRef = useRef(false);
 
   const fetchRecentPoems = async () => {
@@ -48,6 +49,7 @@ export default function Home() {
   };
 
   const loadPoem = async (id: number) => {
+    if (isSaving) return;
     try {
       const res = await fetch('/api/versions', {
         method: 'POST',
@@ -69,6 +71,7 @@ export default function Home() {
   };
 
   const createNewPoem = async () => {
+    if (isSaving) return;
     const res = await fetch('/api/versions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -87,7 +90,7 @@ export default function Home() {
   };
 
   const deleteCurrentPoem = async () => {
-    if (!poemId) return;
+    if (!poemId || isSaving) return;
     const ok = window.confirm('Opravdu smazat aktuální projekt?');
     if (!ok) return;
 
@@ -231,13 +234,15 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <button
               onClick={createNewPoem}
-              className="text-xs md:text-sm px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              disabled={isSaving}
+              className="text-xs md:text-sm px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
             >
               + Nový projekt
             </button>
             <button
               onClick={deleteCurrentPoem}
-              className="text-xs md:text-sm px-3 py-2 bg-red-50 text-red-700 border border-red-200 rounded hover:bg-red-100"
+              disabled={isSaving}
+              className="text-xs md:text-sm px-3 py-2 bg-red-50 text-red-700 border border-red-200 rounded hover:bg-red-100 disabled:bg-gray-100 disabled:text-gray-400"
             >
               Smazat
             </button>
@@ -248,9 +253,10 @@ export default function Home() {
           <div className="mt-3 flex items-center gap-2">
             <span className="text-xs text-gray-500 whitespace-nowrap">Rozpracované:</span>
             <select
-              className="text-xs md:text-sm border border-gray-300 rounded px-2 py-1 bg-white max-w-full"
+              className="text-xs md:text-sm border border-gray-300 rounded px-2 py-1 bg-white max-w-full disabled:bg-gray-100 disabled:text-gray-400"
               value={poemId ?? ''}
               onChange={(e) => loadPoem(Number(e.target.value))}
+              disabled={isSaving}
             >
               {recentPoems.map((poem) => (
                 <option key={poem.id} value={poem.id}>
@@ -258,6 +264,12 @@ export default function Home() {
                 </option>
               ))}
             </select>
+          </div>
+        )}
+
+        {isSaving && (
+          <div className="mt-2 text-xs text-amber-700">
+            Ukládám změny… během ukládání je přepínání projektu dočasně zamknuté.
           </div>
         )}
       </header>
@@ -275,6 +287,7 @@ export default function Home() {
             initialTitle={title}
             initialContent={content}
             onSave={handleSave}
+            onSavingChange={setIsSaving}
           />
         </div>
 

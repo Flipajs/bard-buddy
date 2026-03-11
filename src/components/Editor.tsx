@@ -17,16 +17,26 @@ export default function Editor({
   onSavingChange,
 }: EditorProps) {
   const [title, setTitle] = useState(initialTitle);
-  const [content, setContent] = useState(initialContent);
+  const [lines, setLines] = useState<string[]>(() => {
+    const split = initialContent.split('\n');
+    return split.length ? split : [''];
+  });
   const [saving, setSaving] = useState(false);
+
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lineInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
   const latestTitleRef = useRef(title);
-  const latestContentRef = useRef(content);
+  const latestContentRef = useRef('');
   const latestOnSaveRef = useRef(onSave);
   const latestOnSavingChangeRef = useRef(onSavingChange);
+
   const hasEditedRef = useRef(false);
   const dirtyRef = useRef(false);
   const saveInFlightRef = useRef(false);
+
+  const content = useMemo(() => lines.join('\n'), [lines]);
+  const docSignature = useMemo(() => `${title}\n${content}`, [title, content]);
 
   useEffect(() => {
     latestTitleRef.current = title;
@@ -45,7 +55,6 @@ export default function Editor({
   }, [onSavingChange]);
 
   const lineMetrics = useMemo(() => {
-    const lines = content.split('\n');
     return lines.map((line, index) => {
       const trimmed = line.trim();
       if (!trimmed) {
@@ -73,7 +82,7 @@ export default function Editor({
         lastWord,
       };
     });
-  }, [content]);
+  }, [lines]);
 
   const runSave = async (snapshotContent: string) => {
     if (saveInFlightRef.current) return;
@@ -101,7 +110,6 @@ export default function Editor({
   };
 
   useEffect(() => {
-    // Hybrid: fast debounce save after pause + periodic safety save.
     if (!hasEditedRef.current) return;
 
     dirtyRef.current = true;
@@ -117,11 +125,10 @@ export default function Editor({
     }, 1200);
 
     return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
-  }, [content]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docSignature]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -130,6 +137,7 @@ export default function Editor({
     }, 10000);
 
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -138,13 +146,44 @@ export default function Editor({
     };
   }, []);
 
+  const updateLine = (index: number, value: string) => {
+    hasEditedRef.current = true;
+    setLines((prev) => prev.map((line, i) => (i === index ? value : line)));
+  };
+
+  const insertLineAfter = (index: number) => {
+    hasEditedRef.current = true;
+    setLines((prev) => {
+      const next = [...prev];
+      next.splice(index + 1, 0, '');
+      return next;
+    });
+
+    setTimeout(() => lineInputRefs.current[index + 1]?.focus(), 0);
+  };
+
+  const removeLine = (index: number) => {
+    if (lines.length <= 1) return;
+    hasEditedRef.current = true;
+
+    setLines((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      return next.length ? next : [''];
+    });
+
+    setTimeout(() => lineInputRefs.current[Math.max(0, index - 1)]?.focus(), 0);
+  };
+
   return (
     <div className="flex flex-col h-full bg-white">
       <div className="border-b border-gray-200 p-3 md:p-4">
         <input
           type="text"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => {
+            hasEditedRef.current = true;
+            setTitle(e.target.value);
+          }}
           placeholder="Název básně..."
           className="w-full text-lg md:text-2xl font-bold outline-none bg-transparent"
         />
@@ -154,55 +193,56 @@ export default function Editor({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 flex">
-        <textarea
-          value={content}
-          onChange={(e) => {
-            hasEditedRef.current = true;
-            setContent(e.target.value);
-          }}
-          placeholder="Začni psát svou báseň..."
-          className="flex-1 p-3 md:p-4 outline-none resize-none font-mono text-sm leading-relaxed"
-        />
+      <div className="flex-1 overflow-y-auto">
+        {lineMetrics.map((line) => (
+          <div
+            key={line.index}
+            className={`grid grid-cols-[40px_1fr_auto] items-center gap-2 px-3 md:px-4 py-1.5 border-b border-gray-100 ${
+              line.index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+            }`}
+          >
+            <div className="text-xs text-gray-400">{line.index + 1}.</div>
 
-        <aside className="hidden md:flex w-80 border-l border-gray-200 bg-gray-50 flex-col">
-          <div className="px-3 py-2 border-b border-gray-200 text-xs font-semibold text-gray-700">
-            Vazba na řádky
+            <input
+              ref={(el) => {
+                lineInputRefs.current[line.index] = el;
+              }}
+              value={lines[line.index] ?? ''}
+              onChange={(e) => updateLine(line.index, e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  insertLineAfter(line.index);
+                }
+                if (e.key === 'Backspace' && !(lines[line.index] ?? '').length) {
+                  e.preventDefault();
+                  removeLine(line.index);
+                }
+              }}
+              placeholder={line.index === 0 ? 'Začni psát svou báseň...' : ''}
+              className="font-mono text-sm leading-relaxed bg-transparent outline-none w-full"
+            />
+
+            <div className="flex flex-wrap justify-end gap-1 text-[11px]">
+              <span className="px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
+                {line.syllables} slab.
+              </span>
+              <span className="px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
+                {(line.singabilityScore * 100).toFixed(0)}% zpěv.
+              </span>
+              {line.lastWord && (
+                <span className="px-1.5 py-0.5 rounded bg-indigo-50 border border-indigo-200 text-indigo-700">
+                  {line.lastWord}
+                  {line.rhymeEnding ? ` · -${line.rhymeEnding}` : ''}
+                </span>
+              )}
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto">
-            {lineMetrics.map((line) => (
-              <div
-                key={line.index}
-                className={`px-3 py-2 text-xs border-b border-gray-200 ${
-                  line.index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-gray-400 w-5">{line.index + 1}.</span>
-                  <span className="truncate text-gray-700">{line.text.trim() || '—'}</span>
-                </div>
-                <div className="flex flex-wrap gap-1 ml-7">
-                  <span className="px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
-                    {line.syllables} slab.
-                  </span>
-                  <span className="px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
-                    {(line.singabilityScore * 100).toFixed(0)}% zpěv.
-                  </span>
-                  {line.lastWord && (
-                    <span className="px-1.5 py-0.5 rounded bg-indigo-50 border border-indigo-200 text-indigo-700">
-                      {line.lastWord}
-                      {line.rhymeEnding ? ` · -${line.rhymeEnding}` : ''}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </aside>
+        ))}
       </div>
 
       <div className="border-t border-gray-200 p-3 md:p-4 text-xs md:text-sm text-gray-600">
-        Řádků: {content.split('\n').length} | Znaků: {content.length}
+        Řádků: {lines.length} | Znaků: {content.length}
       </div>
     </div>
   );

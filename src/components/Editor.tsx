@@ -63,9 +63,9 @@ export default function Editor({
 
     const snapshotContent = content;
 
-    // During debounce we are "pending", but not actively saving yet.
+    // During debounce we keep project-switch lock ON to prevent data loss.
     setSaving(false);
-    onSavingChange?.(false);
+    onSavingChange?.(true);
 
     saveTimeoutRef.current = setTimeout(async () => {
       setSaving(true);

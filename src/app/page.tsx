@@ -269,7 +269,7 @@ export default function Home() {
 
         {isSaving && (
           <div className="mt-2 text-xs text-amber-700">
-            Ukládám změny… během ukládání je přepínání projektu dočasně zamknuté.
+            Máš neuložené změny — přepínání projektu je dočasně zamknuté.
           </div>
         )}
       </header>

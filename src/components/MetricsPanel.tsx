@@ -74,28 +74,8 @@ export default function MetricsPanel({ text }: MetricsPanelProps) {
         </div>
       )}
 
-      <h3 className="font-bold text-sm mb-3 text-gray-700">Analýza řádků</h3>
-      <div className="space-y-3">
-        {metrics.map((metric, idx) => (
-          <div key={idx} className="p-2 bg-gray-50 rounded text-xs border border-gray-200">
-            <div className="font-mono text-gray-700 mb-1 line-clamp-2">
-              {metric.words.join(' ')}
-            </div>
-            <div className="space-y-0.5 text-gray-600">
-              <div>
-                <span className="text-gray-500">Slabik:</span> <strong>{metric.syllables}</strong>
-              </div>
-              <div>
-                <span className="text-gray-500">Zpěvnost:</span> <strong>{(metric.singabilityScore * 100).toFixed(0)}%</strong>
-              </div>
-              {metric.rhymeEnding && (
-                <div>
-                  <span className="text-gray-500">Rým:</span> <strong>{metric.rhymeEnding}</strong>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+      <div className="text-xs text-gray-500">
+        Detailní analýza je teď přímo navázaná na řádky v editoru (pravý sloupec u každého řádku).
       </div>
     </div>
   );

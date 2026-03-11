@@ -64,6 +64,7 @@ export default function Editor({
           syllables: 0,
           singabilityScore: 0,
           rhymeEnding: '',
+          rhymeKey: '',
           lastWord: '',
         };
       }
@@ -73,16 +74,48 @@ export default function Editor({
       const lastWordRaw = words[words.length - 1] || '';
       const lastWord = lastWordRaw.replace(/[^\p{L}]/gu, '');
 
+      const rhymeEnding = analyzed?.rhymeEnding ?? '';
+      const rhymeKey = rhymeEnding.length >= 2 ? rhymeEnding.slice(-2) : rhymeEnding;
+
       return {
         index,
         text: line,
         syllables: analyzed?.syllables ?? 0,
         singabilityScore: analyzed?.singabilityScore ?? 0,
-        rhymeEnding: analyzed?.rhymeEnding ?? '',
+        rhymeEnding,
+        rhymeKey,
         lastWord,
       };
     });
   }, [lines]);
+
+  const rhymeColorClass = useMemo(() => {
+    const palette = [
+      'bg-violet-100 border-violet-300 text-violet-800',
+      'bg-sky-100 border-sky-300 text-sky-800',
+      'bg-emerald-100 border-emerald-300 text-emerald-800',
+      'bg-amber-100 border-amber-300 text-amber-800',
+      'bg-rose-100 border-rose-300 text-rose-800',
+      'bg-fuchsia-100 border-fuchsia-300 text-fuchsia-800',
+    ];
+
+    const counts = new Map<string, number>();
+    lineMetrics.forEach((l) => {
+      if (!l.rhymeKey) return;
+      counts.set(l.rhymeKey, (counts.get(l.rhymeKey) || 0) + 1);
+    });
+
+    const map = new Map<string, string>();
+    let idx = 0;
+    [...counts.entries()]
+      .filter(([, c]) => c > 1)
+      .forEach(([key]) => {
+        map.set(key, palette[idx % palette.length]);
+        idx++;
+      });
+
+    return map;
+  }, [lineMetrics]);
 
   const runSave = async (snapshotContent: string) => {
     if (saveInFlightRef.current) return;
@@ -194,7 +227,7 @@ export default function Editor({
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="sticky top-0 z-10 grid grid-cols-[40px_1fr_74px_86px_170px] items-center gap-2 px-3 md:px-4 py-1.5 border-b border-gray-200 bg-white text-[11px] font-semibold text-gray-600">
+        <div className="sticky top-0 z-10 grid grid-cols-[40px_1fr_74px_86px_132px] items-center gap-2 px-3 md:px-4 py-1.5 border-b border-gray-200 bg-white text-[11px] font-semibold text-gray-600">
           <span>#</span>
           <span>Text</span>
           <span className="text-right">Slab.</span>
@@ -205,7 +238,7 @@ export default function Editor({
         {lineMetrics.map((line) => (
           <div
             key={line.index}
-            className={`grid grid-cols-[40px_1fr_74px_86px_170px] items-center gap-2 px-3 md:px-4 py-1.5 border-b border-gray-100 ${
+            className={`grid grid-cols-[40px_1fr_74px_86px_132px] items-center gap-2 px-3 md:px-4 py-1.5 border-b border-gray-100 ${
               line.index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
             }`}
           >
@@ -247,7 +280,11 @@ export default function Editor({
               {line.lastWord ? (
                 <span
                   title={`${line.lastWord}${line.rhymeEnding ? ` · -${line.rhymeEnding}` : ''}`}
-                  className="inline-block max-w-[160px] truncate px-1.5 py-0.5 rounded bg-indigo-50 border border-indigo-200 text-indigo-700"
+                  className={`inline-block max-w-[122px] truncate px-1.5 py-0.5 rounded border ${
+                    line.rhymeKey && rhymeColorClass.get(line.rhymeKey)
+                      ? rhymeColorClass.get(line.rhymeKey)
+                      : 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                  }`}
                 >
                   {line.lastWord}
                   {line.rhymeEnding ? ` · -${line.rhymeEnding}` : ''}

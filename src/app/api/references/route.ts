@@ -33,7 +33,7 @@ function getDb() {
 export async function POST(req: NextRequest) {
   try {
     const { action, poemId, id, title, author, content } = (await req.json()) as {
-      action: 'list' | 'add' | 'delete';
+      action: 'list' | 'add' | 'delete' | 'export-all';
       poemId?: number;
       id?: number;
       title?: string;
@@ -76,6 +76,31 @@ export async function POST(req: NextRequest) {
 
       db.prepare('DELETE FROM references_library WHERE id = ?').run(id);
       return NextResponse.json({ success: true });
+    }
+
+    if (action === 'export-all') {
+      const rows = db
+        .prepare(`
+          SELECT
+            r.id,
+            r.poem_id,
+            p.title as poem_title,
+            r.title,
+            r.author,
+            r.content,
+            r.created_at
+          FROM references_library r
+          LEFT JOIN poems p ON p.id = r.poem_id
+          ORDER BY r.created_at DESC
+        `)
+        .all();
+
+      return NextResponse.json({
+        success: true,
+        exportedAt: Date.now(),
+        count: rows.length,
+        references: rows,
+      });
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });

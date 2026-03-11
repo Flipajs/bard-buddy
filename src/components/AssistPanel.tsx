@@ -82,6 +82,31 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
     }
   };
 
+  const exportReferencesJson = async () => {
+    const res = await fetch('/api/references', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'export-all' }),
+    });
+
+    if (!res.ok) {
+      alert('Export se nepodařil.');
+      return;
+    }
+
+    const data = await res.json();
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    a.href = url;
+    a.download = `bard-buddy-references-${stamp}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const generateSuggestions = async () => {
     if (!selectedText.trim()) {
       alert('Vyber text, aby mohl asistent pomoci.');
@@ -170,13 +195,21 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
           placeholder="Vlož oblíbenou báseň/text (jen jako inspirace)"
           className="w-full text-xs border rounded px-2 py-1 mb-2 h-20"
         />
-        <button
-          onClick={addReference}
-          className="text-xs px-2 py-1 rounded bg-gray-800 text-white hover:bg-black"
-          disabled={!poemId}
-        >
-          + Uložit referenci
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={addReference}
+            className="text-xs px-2 py-1 rounded bg-gray-800 text-white hover:bg-black"
+            disabled={!poemId}
+          >
+            + Uložit referenci
+          </button>
+          <button
+            onClick={exportReferencesJson}
+            className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
+          >
+            Export .JSON
+          </button>
+        </div>
 
         {references.length > 0 && (
           <div className="mt-3 space-y-2 max-h-40 overflow-y-auto">

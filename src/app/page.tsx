@@ -275,13 +275,7 @@ export default function Home() {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        <div
-          className="flex-1 border-r border-gray-200 flex flex-col"
-          onMouseUp={() => {
-            const selection = window.getSelection();
-            setSelectedText(selection?.toString() || '');
-          }}
-        >
+        <div className="flex-1 border-r border-gray-200 flex flex-col">
           <Editor
             key={editorKey}
             initialTitle={title}

@@ -257,7 +257,7 @@ export default function Editor({
             />
           </div>
         ) : (
-          <>
+          <div className="select-none">
             <div className="sticky top-0 z-10 grid grid-cols-[40px_1fr_74px_86px_132px] items-center gap-2 px-3 md:px-4 py-1.5 border-b border-gray-200 bg-white text-[11px] font-semibold text-gray-600">
               <span>#</span>
               <span>Text</span>
@@ -293,7 +293,7 @@ export default function Editor({
                     }
                   }}
                   placeholder={line.index === 0 ? 'Začni psát svou báseň...' : ''}
-                  className="font-mono tabular-nums text-sm leading-relaxed bg-transparent outline-none w-full"
+                  className="font-mono tabular-nums text-sm leading-relaxed bg-transparent outline-none w-full select-text"
                 />
 
                 <div className="text-[11px] text-right">
@@ -327,7 +327,7 @@ export default function Editor({
                 </div>
               </div>
             ))}
-          </>
+          </div>
         )}
       </div>
 

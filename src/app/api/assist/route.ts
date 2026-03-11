@@ -11,10 +11,11 @@ type AssistMode = 'alternatives' | 'continuation' | 'chorus';
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, mode, theme } = (await req.json()) as {
+    const { text, mode, theme, references } = (await req.json()) as {
       text: string;
       mode: AssistMode;
       theme?: string;
+      references?: Array<{ title: string; content: string }>;
     };
 
     if (!text) {
@@ -33,12 +34,16 @@ export async function POST(req: NextRequest) {
 
     let result: string | string[] = '';
 
+    const referenceTexts = (references || []).map(
+      (r) => `### ${r.title}\n${r.content}`
+    );
+
     if (mode === 'alternatives') {
-      result = await generateAlternatives(text, 3);
+      result = await generateAlternatives(text, 3, referenceTexts);
     } else if (mode === 'continuation') {
-      result = await continuePoem(text);
+      result = await continuePoem(text, 'similar', referenceTexts);
     } else if (mode === 'chorus') {
-      result = await generateChorus(theme || text);
+      result = await generateChorus(theme || text, 2, referenceTexts);
     }
 
     return NextResponse.json({

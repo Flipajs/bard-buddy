@@ -1,18 +1,82 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+interface ReferenceItem {
+  id: number;
+  title: string;
+  content: string;
+  created_at: number;
+}
 
 interface AssistPanelProps {
   selectedText: string;
+  poemId?: number;
   onInsert?: (text: string) => void;
 }
 
 type Mode = 'alternatives' | 'continuation' | 'chorus';
 
-export default function AssistPanel({ selectedText, onInsert }: AssistPanelProps) {
+export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPanelProps) {
   const [mode, setMode] = useState<Mode>('alternatives');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const [references, setReferences] = useState<ReferenceItem[]>([]);
+  const [selectedReferenceIds, setSelectedReferenceIds] = useState<number[]>([]);
+  const [newRefTitle, setNewRefTitle] = useState('');
+  const [newRefContent, setNewRefContent] = useState('');
+
+  const fetchReferences = async () => {
+    if (!poemId) return;
+    const res = await fetch('/api/references', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'list', poemId }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setReferences(data.references || []);
+    }
+  };
+
+  useEffect(() => {
+    fetchReferences();
+  }, [poemId]);
+
+  const addReference = async () => {
+    if (!poemId || !newRefTitle.trim() || !newRefContent.trim()) return;
+
+    const res = await fetch('/api/references', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'add',
+        poemId,
+        title: newRefTitle,
+        content: newRefContent,
+      }),
+    });
+
+    if (res.ok) {
+      setNewRefTitle('');
+      setNewRefContent('');
+      fetchReferences();
+    }
+  };
+
+  const deleteReference = async (id: number) => {
+    const res = await fetch('/api/references', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', id }),
+    });
+
+    if (res.ok) {
+      setSelectedReferenceIds((prev) => prev.filter((x) => x !== id));
+      fetchReferences();
+    }
+  };
 
   const generateSuggestions = async () => {
     if (!selectedText.trim()) {
@@ -22,6 +86,10 @@ export default function AssistPanel({ selectedText, onInsert }: AssistPanelProps
 
     setLoading(true);
     try {
+      const selectedReferences = references
+        .filter((ref) => selectedReferenceIds.includes(ref.id))
+        .map((ref) => ({ title: ref.title, content: ref.content }));
+
       const res = await fetch('/api/assist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -29,6 +97,7 @@ export default function AssistPanel({ selectedText, onInsert }: AssistPanelProps
           text: selectedText,
           mode,
           theme: mode === 'chorus' ? selectedText : undefined,
+          references: selectedReferences,
         }),
       });
 
@@ -51,8 +120,8 @@ export default function AssistPanel({ selectedText, onInsert }: AssistPanelProps
   };
 
   return (
-    <div className="p-4 flex flex-col h-full">
-      <h3 className="font-bold text-sm mb-3 text-gray-700">Asistace</h3>
+    <div className="p-4 flex flex-col h-full overflow-y-auto">
+      <h3 className="font-bold text-sm mb-3 text-gray-700">Asistace + inspirace</h3>
 
       <div className="mb-4 space-y-2">
         <label className="text-xs text-gray-600">Režim:</label>
@@ -77,20 +146,74 @@ export default function AssistPanel({ selectedText, onInsert }: AssistPanelProps
         </div>
       </div>
 
+      <div className="mb-3 p-2 border rounded bg-white">
+        <div className="text-xs font-semibold text-gray-700 mb-2">Inspirace (oblíbené texty)</div>
+        <input
+          value={newRefTitle}
+          onChange={(e) => setNewRefTitle(e.target.value)}
+          placeholder="Název reference"
+          className="w-full text-xs border rounded px-2 py-1 mb-2"
+        />
+        <textarea
+          value={newRefContent}
+          onChange={(e) => setNewRefContent(e.target.value)}
+          placeholder="Vlož oblíbenou báseň/text (jen jako inspirace)"
+          className="w-full text-xs border rounded px-2 py-1 mb-2 h-20"
+        />
+        <button
+          onClick={addReference}
+          className="text-xs px-2 py-1 rounded bg-gray-800 text-white hover:bg-black"
+          disabled={!poemId}
+        >
+          + Uložit referenci
+        </button>
+
+        {references.length > 0 && (
+          <div className="mt-3 space-y-2 max-h-40 overflow-y-auto">
+            {references.map((ref) => {
+              const checked = selectedReferenceIds.includes(ref.id);
+              return (
+                <div key={ref.id} className="p-2 border rounded bg-gray-50">
+                  <label className="flex items-center gap-2 text-xs font-medium text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedReferenceIds((prev) => [...prev, ref.id]);
+                        } else {
+                          setSelectedReferenceIds((prev) => prev.filter((id) => id !== ref.id));
+                        }
+                      }}
+                    />
+                    {ref.title}
+                  </label>
+                  <div className="text-[11px] text-gray-600 line-clamp-2 mt-1">{ref.content}</div>
+                  <button
+                    onClick={() => deleteReference(ref.id)}
+                    className="text-[11px] text-red-600 hover:text-red-800 mt-1"
+                  >
+                    smazat
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       <button
         onClick={generateSuggestions}
         disabled={loading || !selectedText.trim()}
         className="w-full mb-4 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
       >
-        {loading ? 'Generuji...' : 'Vygeneruj'}
+        {loading ? 'Generuji...' : `Vygeneruj (${selectedReferenceIds.length} refs)`}
       </button>
 
       {selectedText && (
         <div className="mb-3 p-2 bg-blue-50 rounded border border-blue-200">
           <div className="text-xs text-gray-600 mb-1">Vybraný text:</div>
-          <div className="text-xs text-gray-700 font-mono line-clamp-3">
-            {selectedText}
-          </div>
+          <div className="text-xs text-gray-700 font-mono line-clamp-3">{selectedText}</div>
         </div>
       )}
 
@@ -102,9 +225,7 @@ export default function AssistPanel({ selectedText, onInsert }: AssistPanelProps
                 key={idx}
                 className="p-2 bg-green-50 border border-green-200 rounded cursor-pointer hover:bg-green-100 transition-colors group"
               >
-                <div className="text-xs text-gray-700 font-mono mb-1 line-clamp-3">
-                  {suggestion}
-                </div>
+                <div className="text-xs text-gray-700 font-mono mb-1 line-clamp-4">{suggestion}</div>
                 <button
                   onClick={() => onInsert?.(suggestion)}
                   className="text-xs text-green-700 hover:text-green-900 opacity-0 group-hover:opacity-100 transition-opacity"

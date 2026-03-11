@@ -54,13 +54,20 @@ export async function generateContent(prompt: string): Promise<string> {
 /**
  * Generate alternatives for a verse
  */
+function buildReferenceSection(references: string[] = []) {
+  if (!references.length) return '';
+  return `\n\nReference style material (for inspiration only; DO NOT copy lines verbatim):\n${references.join('\n\n')}\n\nRules: Keep output original, avoid direct copying, synthesize tone/imagery only.`;
+}
+
 export async function generateAlternatives(
   verse: string,
-  count: number = 3
+  count: number = 3,
+  references: string[] = []
 ): Promise<string[]> {
   const prompt = `Generate ${count} alternative poetic lines in Czech that have similar meaning and structure to:
 
 "${verse}"
+${buildReferenceSection(references)}
 
 Return only the alternatives, one per line, without numbering or quotes.`;
 
@@ -76,12 +83,14 @@ Return only the alternatives, one per line, without numbering or quotes.`;
  */
 export async function continuePoem(
   existingText: string,
-  style: string = 'similar'
+  style: string = 'similar',
+  references: string[] = []
 ): Promise<string> {
   const prompt = `You are a Czech poetry assistant. Continue the following poem in a ${style} style. Generate 2-3 new lines that follow naturally.
 
 Current poem:
 ${existingText}
+${buildReferenceSection(references)}
 
 Continue with 2-3 new lines:`;
 
@@ -93,9 +102,11 @@ Continue with 2-3 new lines:`;
  */
 export async function generateChorus(
   mainTheme: string,
-  lines: number = 2
+  lines: number = 2,
+  references: string[] = []
 ): Promise<string> {
   const prompt = `Create a ${lines}-line poetic chorus/refrain in Czech about: "${mainTheme}"
+${buildReferenceSection(references)}
 
 The chorus should be memorable and singable.`;
 

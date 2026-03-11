@@ -185,7 +185,13 @@ export default function Home() {
       case 'metrics':
         return <MetricsPanel text={content} />;
       case 'assist':
-        return <AssistPanel selectedText={selectedText} onInsert={handleInsert} />;
+        return (
+          <AssistPanel
+            selectedText={selectedText}
+            poemId={poemId || undefined}
+            onInsert={handleInsert}
+          />
+        );
       case 'guitar':
         return <GuitarPanel />;
       case 'variants':
@@ -285,7 +291,13 @@ export default function Home() {
           </div>
 
           <div className="flex-1 overflow-hidden">
-            {rightPanelTab === 'assist' && <AssistPanel selectedText={selectedText} onInsert={handleInsert} />}
+            {rightPanelTab === 'assist' && (
+              <AssistPanel
+                selectedText={selectedText}
+                poemId={poemId || undefined}
+                onInsert={handleInsert}
+              />
+            )}
             {rightPanelTab === 'guitar' && <GuitarPanel />}
             {rightPanelTab === 'variants' && <VariantSidebar poemId={poemId || undefined} onRestore={handleRestore} />}
             {rightPanelTab === 'versions' && <VersionSidebar poemId={poemId || undefined} onRestore={handleRestore} />}

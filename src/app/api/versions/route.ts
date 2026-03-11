@@ -31,6 +31,15 @@ function getDb() {
       label TEXT NOT NULL,
       FOREIGN KEY(poem_id) REFERENCES poems(id)
     );
+
+    CREATE TABLE IF NOT EXISTS references_library (
+      id INTEGER PRIMARY KEY,
+      poem_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY(poem_id) REFERENCES poems(id)
+    );
   `);
 
   return db;

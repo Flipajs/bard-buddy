@@ -283,13 +283,40 @@ export default function Editor({
                   onChange={(e) => updateLine(line.index, e.target.value)}
                   onSelect={(e) => onSelectionChange?.(e.currentTarget.value.substring(e.currentTarget.selectionStart || 0, e.currentTarget.selectionEnd || 0))}
                   onKeyDown={(e) => {
+                    const current = e.currentTarget;
+                    const caret = current.selectionStart ?? current.value.length;
+
                     if (e.key === 'Enter') {
                       e.preventDefault();
                       insertLineAfter(line.index);
+                      return;
                     }
+
                     if (e.key === 'Backspace' && !(lines[line.index] ?? '').length) {
                       e.preventDefault();
                       removeLine(line.index);
+                      return;
+                    }
+
+                    if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      const prev = lineInputRefs.current[line.index - 1];
+                      if (prev) {
+                        prev.focus();
+                        const pos = Math.min(caret, prev.value.length);
+                        prev.setSelectionRange(pos, pos);
+                      }
+                      return;
+                    }
+
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      const next = lineInputRefs.current[line.index + 1];
+                      if (next) {
+                        next.focus();
+                        const pos = Math.min(caret, next.value.length);
+                        next.setSelectionRange(pos, pos);
+                      }
                     }
                   }}
                   placeholder={line.index === 0 ? 'Začni psát svou báseň...' : ''}

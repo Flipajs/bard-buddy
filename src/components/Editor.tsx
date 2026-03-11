@@ -194,10 +194,18 @@ export default function Editor({
       </div>
 
       <div className="flex-1 overflow-y-auto">
+        <div className="sticky top-0 z-10 grid grid-cols-[40px_1fr_74px_86px_170px] items-center gap-2 px-3 md:px-4 py-1.5 border-b border-gray-200 bg-white text-[11px] font-semibold text-gray-600">
+          <span>#</span>
+          <span>Text</span>
+          <span className="text-right">Slab.</span>
+          <span className="text-right">Zpěv.</span>
+          <span className="text-right">Konec / rým</span>
+        </div>
+
         {lineMetrics.map((line) => (
           <div
             key={line.index}
-            className={`grid grid-cols-[40px_1fr_auto] items-center gap-2 px-3 md:px-4 py-1.5 border-b border-gray-100 ${
+            className={`grid grid-cols-[40px_1fr_74px_86px_170px] items-center gap-2 px-3 md:px-4 py-1.5 border-b border-gray-100 ${
               line.index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
             }`}
           >
@@ -223,18 +231,29 @@ export default function Editor({
               className="font-mono text-sm leading-relaxed bg-transparent outline-none w-full"
             />
 
-            <div className="flex flex-wrap justify-end gap-1 text-[11px]">
-              <span className="px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
-                {line.syllables} slab.
+            <div className="text-[11px] text-right">
+              <span className="inline-block min-w-[68px] px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
+                {line.syllables}
               </span>
-              <span className="px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
-                {(line.singabilityScore * 100).toFixed(0)}% zpěv.
+            </div>
+
+            <div className="text-[11px] text-right">
+              <span className="inline-block min-w-[80px] px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
+                {(line.singabilityScore * 100).toFixed(0)}%
               </span>
-              {line.lastWord && (
-                <span className="px-1.5 py-0.5 rounded bg-indigo-50 border border-indigo-200 text-indigo-700">
+            </div>
+
+            <div className="text-[11px] text-right">
+              {line.lastWord ? (
+                <span
+                  title={`${line.lastWord}${line.rhymeEnding ? ` · -${line.rhymeEnding}` : ''}`}
+                  className="inline-block max-w-[160px] truncate px-1.5 py-0.5 rounded bg-indigo-50 border border-indigo-200 text-indigo-700"
+                >
                   {line.lastWord}
                   {line.rhymeEnding ? ` · -${line.rhymeEnding}` : ''}
                 </span>
+              ) : (
+                <span className="inline-block min-w-[80px] px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-400">—</span>
               )}
             </div>
           </div>

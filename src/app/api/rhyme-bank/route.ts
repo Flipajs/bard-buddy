@@ -6,6 +6,7 @@ export const runtime = 'nodejs';
 function fallbackCandidates(rhymeEnding: string, text: string, refs: string[]): string[] {
   const ending = rhymeEnding.toLowerCase();
   const minTail = ending.length >= 3 ? ending.slice(-3) : ending;
+  const tail2 = minTail.slice(-2);
   const corpus = [text, ...refs].join('\n').toLowerCase();
 
   const words = corpus
@@ -15,7 +16,22 @@ function fallbackCandidates(rhymeEnding: string, text: string, refs: string[]): 
     .filter((w) => w.length >= 3);
 
   const direct = words.filter((w) => w.endsWith(minTail));
-  const near = words.filter((w) => w.slice(-2) === minTail.slice(-2));
+
+  // Near/slant heuristic for English-like words:
+  // compare normalized vowel skeleton in tail + last consonant.
+  const normalizeTail = (w: string) => {
+    const tail = w.slice(-4);
+    const vowelsNorm = tail.replace(/[aeiouy]/g, 'V');
+    const lastConsonant = [...tail].reverse().find((c) => !'aeiouy'.includes(c)) || '';
+    return `${vowelsNorm}|${lastConsonant}`;
+  };
+
+  const targetNorm = normalizeTail(minTail.padStart(4, minTail));
+  const near = words.filter((w) => {
+    if (w.endsWith(minTail)) return false;
+    if (w.slice(-2) === tail2) return true;
+    return normalizeTail(w) === targetNorm;
+  });
 
   const unique = Array.from(new Set([...direct, ...near]));
   return unique.slice(0, 30);

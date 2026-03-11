@@ -19,7 +19,6 @@ export default function Editor({
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
   const [saving, setSaving] = useState(false);
-  const [showInlineMetrics, setShowInlineMetrics] = useState(true);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const latestTitleRef = useRef(title);
   const latestContentRef = useRef(content);
@@ -56,16 +55,22 @@ export default function Editor({
           syllables: 0,
           singabilityScore: 0,
           rhymeEnding: '',
+          lastWord: '',
         };
       }
 
       const analyzed = analyzePoem(trimmed)[0];
+      const words = trimmed.split(/\s+/).filter(Boolean);
+      const lastWordRaw = words[words.length - 1] || '';
+      const lastWord = lastWordRaw.replace(/[^\p{L}]/gu, '');
+
       return {
         index,
         text: line,
         syllables: analyzed?.syllables ?? 0,
         singabilityScore: analyzed?.singabilityScore ?? 0,
         rhymeEnding: analyzed?.rhymeEnding ?? '',
+        lastWord,
       };
     });
   }, [content]);
@@ -149,45 +154,51 @@ export default function Editor({
         </div>
       </div>
 
-      <textarea
-        value={content}
-        onChange={(e) => {
-          hasEditedRef.current = true;
-          setContent(e.target.value);
-        }}
-        placeholder="Začni psát svou báseň..."
-        className="flex-1 p-3 md:p-4 outline-none resize-none font-mono text-sm leading-relaxed"
-      />
+      <div className="flex-1 min-h-0 flex">
+        <textarea
+          value={content}
+          onChange={(e) => {
+            hasEditedRef.current = true;
+            setContent(e.target.value);
+          }}
+          placeholder="Začni psát svou báseň..."
+          className="flex-1 p-3 md:p-4 outline-none resize-none font-mono text-sm leading-relaxed"
+        />
 
-      <div className="border-t border-gray-200 bg-gray-50">
-        <button
-          onClick={() => setShowInlineMetrics((v) => !v)}
-          className="w-full text-left px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-100"
-        >
-          {showInlineMetrics ? '▾' : '▸'} Inline metriky řádků
-        </button>
-
-        {showInlineMetrics && (
-          <div className="max-h-40 overflow-y-auto px-3 md:px-4 pb-2 space-y-1">
+        <aside className="hidden md:flex w-80 border-l border-gray-200 bg-gray-50 flex-col">
+          <div className="px-3 py-2 border-b border-gray-200 text-xs font-semibold text-gray-700">
+            Vazba na řádky
+          </div>
+          <div className="flex-1 overflow-y-auto">
             {lineMetrics.map((line) => (
-              <div key={line.index} className="flex items-center gap-2 text-[11px] md:text-xs">
-                <span className="w-6 text-gray-400">{line.index + 1}.</span>
-                <span className="truncate flex-1 text-gray-600">{line.text.trim() || '—'}</span>
-                <span className="px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
-                  {line.syllables} slab.
-                </span>
-                <span className="px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
-                  {(line.singabilityScore * 100).toFixed(0)}%
-                </span>
-                {line.rhymeEnding ? (
+              <div
+                key={line.index}
+                className={`px-3 py-2 text-xs border-b border-gray-200 ${
+                  line.index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-gray-400 w-5">{line.index + 1}.</span>
+                  <span className="truncate text-gray-700">{line.text.trim() || '—'}</span>
+                </div>
+                <div className="flex flex-wrap gap-1 ml-7">
                   <span className="px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
-                    -{line.rhymeEnding}
+                    {line.syllables} slab.
                   </span>
-                ) : null}
+                  <span className="px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
+                    {(line.singabilityScore * 100).toFixed(0)}% zpěv.
+                  </span>
+                  {line.lastWord && (
+                    <span className="px-1.5 py-0.5 rounded bg-indigo-50 border border-indigo-200 text-indigo-700">
+                      {line.lastWord}
+                      {line.rhymeEnding ? ` · -${line.rhymeEnding}` : ''}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
-        )}
+        </aside>
       </div>
 
       <div className="border-t border-gray-200 p-3 md:p-4 text-xs md:text-sm text-gray-600">

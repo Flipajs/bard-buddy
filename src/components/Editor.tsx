@@ -197,6 +197,7 @@ export default function Editor({
       <div className="flex-1 min-h-0 grid grid-cols-[1fr_304px]">
         <textarea
           ref={textareaRef}
+          wrap="off"
           value={content}
           onChange={(e) => {
             hasEditedRef.current = true;
@@ -214,7 +215,7 @@ export default function Editor({
             }
           }}
           placeholder="Začni psát svou báseň..."
-          className="h-full p-3 md:p-4 outline-none resize-none font-mono tabular-nums text-sm leading-relaxed border-r border-gray-200"
+          className="h-full p-3 md:p-4 outline-none resize-none overflow-x-auto whitespace-pre font-mono tabular-nums text-sm leading-6 border-r border-gray-200"
         />
 
         <div className="flex flex-col min-h-0 bg-gray-50">
@@ -228,7 +229,7 @@ export default function Editor({
             {lineMetrics.map((line) => (
               <div
                 key={line.index}
-                className={`grid grid-cols-[74px_86px_132px] items-center gap-2 px-3 py-[7px] border-b border-gray-100 ${
+                className={`grid grid-cols-[74px_86px_132px] items-center gap-2 px-3 h-6 border-b border-gray-100 ${
                   line.index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                 }`}
               >

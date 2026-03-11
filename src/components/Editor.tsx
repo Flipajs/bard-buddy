@@ -196,7 +196,7 @@ export default function Editor({
       </div>
 
       <div
-        className="flex-1 min-h-0 grid grid-cols-[1fr_304px]"
+        className="flex-1 min-h-0 grid grid-cols-[1fr_286px]"
         style={{
           ['--bb-row-h' as any]: '24px',
           ['--bb-head-h' as any]: '31px',
@@ -252,7 +252,7 @@ export default function Editor({
         </div>
 
         <div className="flex flex-col min-h-0 bg-gray-50">
-          <div className="sticky top-0 z-10 grid grid-cols-[74px_86px_132px] h-[var(--bb-head-h)] items-center gap-2 px-3 py-1.5 border-b border-gray-200 bg-white text-[11px] font-semibold text-gray-600">
+          <div className="sticky top-0 z-10 grid grid-cols-[70px_78px_116px] h-[var(--bb-head-h)] items-center gap-2 px-2 py-1.5 border-b border-gray-200 bg-white text-[11px] font-semibold text-gray-600">
             <span className="text-right">Slab.</span>
             <span className="text-right">Zpěv.</span>
             <span className="text-right">Konec / rým</span>
@@ -260,7 +260,7 @@ export default function Editor({
 
           <div
             ref={insightsScrollRef}
-            className="flex-1 overflow-y-auto"
+            className="flex-1 overflow-y-hidden"
             onScroll={(e) => {
               const top = (e.currentTarget as HTMLDivElement).scrollTop;
               if (textareaRef.current) textareaRef.current.scrollTop = top;
@@ -270,7 +270,7 @@ export default function Editor({
             {lineMetrics.map((line) => (
               <div
                 key={line.index}
-                className={`grid grid-cols-[74px_86px_132px] items-center gap-2 px-3 h-[var(--bb-row-h)] border-b border-gray-100 ${
+                className={`grid grid-cols-[70px_78px_116px] items-center gap-2 px-2 h-[var(--bb-row-h)] border-b border-gray-100 ${
                   line.index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                 }`}
               >
@@ -286,11 +286,11 @@ export default function Editor({
                   </span>
                 </div>
 
-                <div className="text-[11px] text-right">
+                <div className="text-[11px] text-right overflow-hidden">
                   {line.lastWord ? (
                     <span
                       title={`${line.lastWord}${line.rhymeEnding ? ` · -${line.rhymeEnding}` : ''}`}
-                      className={`inline-block max-w-[122px] truncate px-1.5 py-0.5 rounded border ${
+                      className={`inline-block max-w-[106px] truncate px-1.5 py-0.5 rounded border ${
                         line.rhymeKey && rhymeColorClass.get(line.rhymeKey)
                           ? rhymeColorClass.get(line.rhymeKey)
                           : 'bg-indigo-50 border-indigo-200 text-indigo-700'

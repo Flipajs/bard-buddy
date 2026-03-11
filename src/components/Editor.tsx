@@ -251,7 +251,7 @@ export default function Editor({
           </div>
         </div>
 
-        <div className="flex flex-col min-h-0 bg-gray-50">
+        <div className="flex flex-col min-h-0 bg-gray-50 overflow-x-hidden">
           <div className="sticky top-0 z-10 grid grid-cols-[70px_78px_116px] h-[var(--bb-head-h)] items-center gap-2 px-2 py-1.5 border-b border-gray-200 bg-white text-[11px] font-semibold text-gray-600">
             <span className="text-right">Slab.</span>
             <span className="text-right">Zpěv.</span>
@@ -275,13 +275,13 @@ export default function Editor({
                 }`}
               >
                 <div className="text-[11px] text-right">
-                  <span className="inline-block min-w-[68px] px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
+                  <span className="inline-block w-[64px] px-1 py-0.5 rounded bg-white border border-gray-200 text-gray-700 text-right">
                     {line.syllables}
                   </span>
                 </div>
 
                 <div className="text-[11px] text-right">
-                  <span className="inline-block min-w-[80px] px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
+                  <span className="inline-block w-[72px] px-1 py-0.5 rounded bg-white border border-gray-200 text-gray-700 text-right">
                     {(line.singabilityScore * 100).toFixed(0)}%
                   </span>
                 </div>
@@ -300,7 +300,7 @@ export default function Editor({
                       {line.rhymeEnding ? ` · -${line.rhymeEnding}` : ''}
                     </span>
                   ) : (
-                    <span className="inline-block min-w-[80px] px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-400">—</span>
+                    <span className="inline-block w-[72px] px-1 py-0.5 rounded bg-white border border-gray-200 text-gray-400 text-right">—</span>
                   )}
                 </div>
               </div>

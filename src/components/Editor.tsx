@@ -195,28 +195,35 @@ export default function Editor({
       </div>
 
       <div className="flex-1 min-h-0 grid grid-cols-[1fr_304px]">
-        <textarea
-          ref={textareaRef}
-          wrap="off"
-          value={content}
-          onChange={(e) => {
-            hasEditedRef.current = true;
-            setContent(e.target.value);
-          }}
-          onSelect={(e) => {
-            const el = e.currentTarget;
-            const s = el.selectionStart ?? 0;
-            const t = el.selectionEnd ?? 0;
-            onSelectionChange?.(el.value.slice(s, t));
-          }}
-          onScroll={(e) => {
-            if (metricsScrollRef.current) {
-              metricsScrollRef.current.scrollTop = e.currentTarget.scrollTop;
-            }
-          }}
-          placeholder="Začni psát svou báseň..."
-          className="h-full p-3 md:p-4 outline-none resize-none overflow-x-auto whitespace-pre font-mono tabular-nums text-sm leading-6 border-r border-gray-200"
-        />
+        <div className="flex flex-col min-h-0 border-r border-gray-200">
+          <div className="h-[31px] border-b border-gray-200 bg-white" />
+          <textarea
+            ref={textareaRef}
+            wrap="off"
+            value={content}
+            onChange={(e) => {
+              hasEditedRef.current = true;
+              setContent(e.target.value);
+            }}
+            onSelect={(e) => {
+              const el = e.currentTarget;
+              const s = el.selectionStart ?? 0;
+              const t = el.selectionEnd ?? 0;
+              onSelectionChange?.(el.value.slice(s, t));
+            }}
+            onScroll={(e) => {
+              if (metricsScrollRef.current) {
+                metricsScrollRef.current.scrollTop = e.currentTarget.scrollTop;
+              }
+            }}
+            placeholder="Začni psát svou báseň..."
+            style={{
+              backgroundImage:
+                'repeating-linear-gradient(to bottom, #ffffff 0px, #ffffff 24px, #f9fafb 24px, #f9fafb 48px)',
+            }}
+            className="flex-1 px-3 md:px-4 py-0 outline-none resize-none overflow-x-auto whitespace-pre font-mono tabular-nums text-sm leading-6"
+          />
+        </div>
 
         <div className="flex flex-col min-h-0 bg-gray-50">
           <div className="sticky top-0 z-10 grid grid-cols-[74px_86px_132px] items-center gap-2 px-3 py-1.5 border-b border-gray-200 bg-white text-[11px] font-semibold text-gray-600">

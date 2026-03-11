@@ -30,7 +30,6 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
   const [newRefContent, setNewRefContent] = useState('');
 
   const fetchReferences = async () => {
-    if (!poemId) return;
     const res = await fetch('/api/references', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -47,7 +46,7 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
   }, [poemId]);
 
   const addReference = async () => {
-    if (!poemId || !newRefTitle.trim() || !newRefContent.trim()) return;
+    if (!newRefTitle.trim() || !newRefContent.trim()) return;
 
     const res = await fetch('/api/references', {
       method: 'POST',
@@ -108,8 +107,6 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
   };
 
   const importReferencesJson = async (file: File) => {
-    if (!poemId) return;
-
     try {
       const text = await file.text();
       const parsed = JSON.parse(text);
@@ -236,7 +233,6 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
           <button
             onClick={addReference}
             className="text-xs px-2 py-1 rounded bg-gray-800 text-white hover:bg-black"
-            disabled={!poemId}
           >
             + Uložit referenci
           </button>

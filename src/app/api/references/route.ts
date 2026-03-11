@@ -45,27 +45,23 @@ export async function POST(req: NextRequest) {
     const db = getDb();
 
     if (action === 'list') {
-      if (!poemId) {
-        return NextResponse.json({ error: 'poemId is required' }, { status: 400 });
-      }
-
       const rows = db
-        .prepare('SELECT id, title, author, content, created_at FROM references_library WHERE poem_id = ? ORDER BY created_at DESC')
-        .all(poemId);
+        .prepare('SELECT id, poem_id, title, author, content, created_at FROM references_library ORDER BY created_at DESC')
+        .all();
       return NextResponse.json({ success: true, references: rows });
     }
 
     if (action === 'add') {
-      if (!poemId || !title?.trim() || !content?.trim()) {
+      if (!title?.trim() || !content?.trim()) {
         return NextResponse.json(
-          { error: 'poemId, title and content are required' },
+          { error: 'title and content are required' },
           { status: 400 }
         );
       }
 
       const result = db
         .prepare('INSERT INTO references_library (poem_id, title, author, content, created_at) VALUES (?, ?, ?, ?, ?)')
-        .run(poemId, title.trim(), (author || '').trim(), content.trim(), Date.now());
+        .run(poemId || 0, title.trim(), (author || '').trim(), content.trim(), Date.now());
 
       return NextResponse.json({ success: true, id: result.lastInsertRowid });
     }
@@ -105,9 +101,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'import-all') {
-      if (!poemId || !references?.length) {
+      if (!references?.length) {
         return NextResponse.json(
-          { error: 'poemId and references[] are required' },
+          { error: 'references[] are required' },
           { status: 400 }
         );
       }
@@ -121,7 +117,7 @@ export async function POST(req: NextRequest) {
         const t = (ref.title || '').trim();
         const c = (ref.content || '').trim();
         if (!t || !c) continue;
-        stmt.run(poemId, t, (ref.author || '').trim(), c, Date.now());
+        stmt.run(poemId || 0, t, (ref.author || '').trim(), c, Date.now());
         imported++;
       }
 

@@ -24,7 +24,7 @@ export default function Editor({
     return split.length ? split : [''];
   });
   const [saving, setSaving] = useState(false);
-  const [crossLineSelectMode, setCrossLineSelectMode] = useState(false);
+  const [crossLineSelectMode, setCrossLineSelectMode] = useState(true);
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lineInputRefs = useRef<Array<HTMLInputElement | null>>([]);
@@ -230,7 +230,7 @@ export default function Editor({
               onClick={() => setCrossLineSelectMode((v) => !v)}
               className="text-[11px] px-2 py-0.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-100"
             >
-              {crossLineSelectMode ? 'Řádkový režim' : 'Výběr přes více řádků'}
+              {crossLineSelectMode ? 'Řádkový režim (metr.)' : 'Výběr přes více řádků'}
             </button>
           </div>
           {saving && <span className="text-amber-600">Ukládám...</span>}

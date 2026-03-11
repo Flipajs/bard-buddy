@@ -19,27 +19,21 @@ export default function Editor({
   onSelectionChange,
 }: EditorProps) {
   const [title, setTitle] = useState(initialTitle);
-  const [lines, setLines] = useState<string[]>(() => {
-    const split = initialContent.split('\n');
-    return split.length ? split : [''];
-  });
+  const [content, setContent] = useState(initialContent);
   const [saving, setSaving] = useState(false);
-  const [crossLineSelectMode, setCrossLineSelectMode] = useState(true);
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lineInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const metricsScrollRef = useRef<HTMLDivElement | null>(null);
 
   const latestTitleRef = useRef(title);
-  const latestContentRef = useRef('');
+  const latestContentRef = useRef(content);
   const latestOnSaveRef = useRef(onSave);
   const latestOnSavingChangeRef = useRef(onSavingChange);
 
   const hasEditedRef = useRef(false);
   const dirtyRef = useRef(false);
   const saveInFlightRef = useRef(false);
-
-  const content = useMemo(() => lines.join('\n'), [lines]);
-  const docSignature = useMemo(() => `${title}\n${content}`, [title, content]);
 
   useEffect(() => {
     latestTitleRef.current = title;
@@ -58,6 +52,8 @@ export default function Editor({
   }, [onSavingChange]);
 
   const lineMetrics = useMemo(() => {
+    const lines = content.split('\n');
+
     return lines.map((line, index) => {
       const trimmed = line.trim();
       if (!trimmed) {
@@ -76,7 +72,6 @@ export default function Editor({
       const words = trimmed.split(/\s+/).filter(Boolean);
       const lastWordRaw = words[words.length - 1] || '';
       const lastWord = lastWordRaw.replace(/[^\p{L}]/gu, '');
-
       const rhymeEnding = analyzed?.rhymeEnding ?? '';
       const rhymeKey = rhymeEnding.length >= 2 ? rhymeEnding.slice(-2) : rhymeEnding;
 
@@ -90,7 +85,7 @@ export default function Editor({
         lastWord,
       };
     });
-  }, [lines]);
+  }, [content]);
 
   const rhymeColorClass = useMemo(() => {
     const palette = [
@@ -151,9 +146,7 @@ export default function Editor({
     dirtyRef.current = true;
     latestOnSavingChangeRef.current?.(true);
 
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
 
     const snapshotContent = content;
     saveTimeoutRef.current = setTimeout(() => {
@@ -164,7 +157,7 @@ export default function Editor({
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [docSignature]);
+  }, [content, title]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -182,34 +175,6 @@ export default function Editor({
     };
   }, []);
 
-  const updateLine = (index: number, value: string) => {
-    hasEditedRef.current = true;
-    setLines((prev) => prev.map((line, i) => (i === index ? value : line)));
-  };
-
-  const insertLineAfter = (index: number) => {
-    hasEditedRef.current = true;
-    setLines((prev) => {
-      const next = [...prev];
-      next.splice(index + 1, 0, '');
-      return next;
-    });
-
-    setTimeout(() => lineInputRefs.current[index + 1]?.focus(), 0);
-  };
-
-  const removeLine = (index: number) => {
-    if (lines.length <= 1) return;
-    hasEditedRef.current = true;
-
-    setLines((prev) => {
-      const next = prev.filter((_, i) => i !== index);
-      return next.length ? next : [''];
-    });
-
-    setTimeout(() => lineInputRefs.current[Math.max(0, index - 1)]?.focus(), 0);
-  };
-
   return (
     <div className="flex flex-col h-full bg-white">
       <div className="border-b border-gray-200 p-3 md:p-4">
@@ -224,105 +189,49 @@ export default function Editor({
           className="w-full text-lg md:text-2xl font-bold outline-none bg-transparent"
         />
         <div className="flex justify-between items-center mt-2 text-xs md:text-sm text-gray-500">
-          <div className="flex items-center gap-2">
-            <span>Titul</span>
-            <button
-              onClick={() => setCrossLineSelectMode((v) => !v)}
-              className="text-[11px] px-2 py-0.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-100"
-            >
-              {crossLineSelectMode ? 'Řádkový režim (metr.)' : 'Výběr přes více řádků'}
-            </button>
-          </div>
+          <span>Titul</span>
           {saving && <span className="text-amber-600">Ukládám...</span>}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        {crossLineSelectMode ? (
-          <div className="h-full p-3 md:p-4">
-            <textarea
-              value={content}
-              onChange={(e) => {
-                hasEditedRef.current = true;
-                setLines(e.target.value.split('\n'));
-              }}
-              onSelect={(e) => {
-                const el = e.currentTarget;
-                const s = el.selectionStart ?? 0;
-                const t = el.selectionEnd ?? 0;
-                onSelectionChange?.(el.value.slice(s, t));
-              }}
-              placeholder="Začni psát svou báseň..."
-              className="w-full h-full font-mono tabular-nums text-sm leading-relaxed border border-gray-200 rounded p-3 outline-none resize-none"
-            />
-          </div>
-        ) : (
-          <div className="select-none">
-            <div className="sticky top-0 z-10 grid grid-cols-[40px_1fr_74px_86px_132px] items-center gap-2 px-3 md:px-4 py-1.5 border-b border-gray-200 bg-white text-[11px] font-semibold text-gray-600">
-              <span>#</span>
-              <span>Text</span>
-              <span className="text-right">Slab.</span>
-              <span className="text-right">Zpěv.</span>
-              <span className="text-right">Konec / rým</span>
-            </div>
+      <div className="flex-1 min-h-0 grid grid-cols-[1fr_304px]">
+        <textarea
+          ref={textareaRef}
+          value={content}
+          onChange={(e) => {
+            hasEditedRef.current = true;
+            setContent(e.target.value);
+          }}
+          onSelect={(e) => {
+            const el = e.currentTarget;
+            const s = el.selectionStart ?? 0;
+            const t = el.selectionEnd ?? 0;
+            onSelectionChange?.(el.value.slice(s, t));
+          }}
+          onScroll={(e) => {
+            if (metricsScrollRef.current) {
+              metricsScrollRef.current.scrollTop = e.currentTarget.scrollTop;
+            }
+          }}
+          placeholder="Začni psát svou báseň..."
+          className="h-full p-3 md:p-4 outline-none resize-none font-mono tabular-nums text-sm leading-relaxed border-r border-gray-200"
+        />
 
+        <div className="flex flex-col min-h-0 bg-gray-50">
+          <div className="sticky top-0 z-10 grid grid-cols-[74px_86px_132px] items-center gap-2 px-3 py-1.5 border-b border-gray-200 bg-white text-[11px] font-semibold text-gray-600">
+            <span className="text-right">Slab.</span>
+            <span className="text-right">Zpěv.</span>
+            <span className="text-right">Konec / rým</span>
+          </div>
+
+          <div ref={metricsScrollRef} className="flex-1 overflow-y-auto">
             {lineMetrics.map((line) => (
               <div
                 key={line.index}
-                className={`grid grid-cols-[40px_1fr_74px_86px_132px] items-center gap-2 px-3 md:px-4 py-1.5 border-b border-gray-100 ${
+                className={`grid grid-cols-[74px_86px_132px] items-center gap-2 px-3 py-[7px] border-b border-gray-100 ${
                   line.index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                 }`}
               >
-                <div className="text-xs text-gray-400">{line.index + 1}.</div>
-
-                <input
-                  ref={(el) => {
-                    lineInputRefs.current[line.index] = el;
-                  }}
-                  value={lines[line.index] ?? ''}
-                  onChange={(e) => updateLine(line.index, e.target.value)}
-                  onSelect={(e) => onSelectionChange?.(e.currentTarget.value.substring(e.currentTarget.selectionStart || 0, e.currentTarget.selectionEnd || 0))}
-                  onKeyDown={(e) => {
-                    const current = e.currentTarget;
-                    const caret = current.selectionStart ?? current.value.length;
-
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      insertLineAfter(line.index);
-                      return;
-                    }
-
-                    if (e.key === 'Backspace' && !(lines[line.index] ?? '').length) {
-                      e.preventDefault();
-                      removeLine(line.index);
-                      return;
-                    }
-
-                    if (e.key === 'ArrowUp') {
-                      e.preventDefault();
-                      const prev = lineInputRefs.current[line.index - 1];
-                      if (prev) {
-                        prev.focus();
-                        const pos = Math.min(caret, prev.value.length);
-                        prev.setSelectionRange(pos, pos);
-                      }
-                      return;
-                    }
-
-                    if (e.key === 'ArrowDown') {
-                      e.preventDefault();
-                      const next = lineInputRefs.current[line.index + 1];
-                      if (next) {
-                        next.focus();
-                        const pos = Math.min(caret, next.value.length);
-                        next.setSelectionRange(pos, pos);
-                      }
-                    }
-                  }}
-                  placeholder={line.index === 0 ? 'Začni psát svou báseň...' : ''}
-                  className="font-mono tabular-nums text-sm leading-relaxed bg-transparent outline-none w-full select-text"
-                />
-
                 <div className="text-[11px] text-right">
                   <span className="inline-block min-w-[68px] px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
                     {line.syllables}
@@ -355,11 +264,11 @@ export default function Editor({
               </div>
             ))}
           </div>
-        )}
+        </div>
       </div>
 
       <div className="border-t border-gray-200 p-3 md:p-4 text-xs md:text-sm text-gray-600">
-        Řádků: {lines.length} | Znaků: {content.length}
+        Řádků: {lineMetrics.length} | Znaků: {content.length}
       </div>
     </div>
   );

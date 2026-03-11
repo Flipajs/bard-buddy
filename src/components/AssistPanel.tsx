@@ -29,6 +29,10 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
   const [newRefAuthor, setNewRefAuthor] = useState('');
   const [newRefContent, setNewRefContent] = useState('');
 
+  const [rhymeEnding, setRhymeEnding] = useState('');
+  const [rhymeCandidates, setRhymeCandidates] = useState<string[]>([]);
+  const [rhymeLoading, setRhymeLoading] = useState(false);
+
   const fetchReferences = async () => {
     const res = await fetch('/api/references', {
       method: 'POST',
@@ -44,6 +48,14 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
   useEffect(() => {
     fetchReferences();
   }, [poemId]);
+
+  useEffect(() => {
+    const w = selectedText.trim().split(/\s+/).filter(Boolean).pop() || '';
+    const cleaned = w.toLowerCase().replace(/[^\p{L}]/gu, '');
+    if (cleaned.length >= 2) {
+      setRhymeEnding(cleaned.slice(-3));
+    }
+  }, [selectedText]);
 
   const addReference = async () => {
     if (!newRefTitle.trim() || !newRefContent.trim()) return;
@@ -139,6 +151,40 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
       console.error(e);
       alert('Neplatný JSON soubor.');
     }
+  };
+
+  const generateRhymeBank = async () => {
+    const ending = rhymeEnding.trim().toLowerCase();
+    if (!ending) return;
+
+    setRhymeLoading(true);
+    try {
+      const selectedReferences = references
+        .filter((ref) => selectedReferenceIds.includes(ref.id))
+        .map((ref) => ({ title: ref.title, author: ref.author, content: ref.content }));
+
+      const res = await fetch('/api/rhyme-bank', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rhymeEnding: ending,
+          text: selectedText || '',
+          references: selectedReferences,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert(`Rhyme bank chyba: ${err.error || 'unknown'}`);
+      } else {
+        const data = await res.json();
+        setRhymeCandidates(data.candidates || []);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Nepodařilo se vygenerovat rhyme bank.');
+    }
+    setRhymeLoading(false);
   };
 
   const generateSuggestions = async () => {
@@ -308,6 +354,39 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
           <div className="text-xs text-gray-700 font-mono line-clamp-3">{selectedText}</div>
         </div>
       )}
+
+      <div className="mb-3 p-2 border rounded bg-white">
+        <div className="text-xs font-semibold text-gray-700 mb-2">Rhyme bank (beta)</div>
+        <div className="flex items-center gap-2 mb-2">
+          <input
+            value={rhymeEnding}
+            onChange={(e) => setRhymeEnding(e.target.value)}
+            placeholder="rýmové zakončení (např. ava)"
+            className="flex-1 text-xs border rounded px-2 py-1"
+          />
+          <button
+            onClick={generateRhymeBank}
+            disabled={rhymeLoading || !rhymeEnding.trim()}
+            className="text-xs px-2 py-1 rounded bg-purple-600 text-white disabled:bg-gray-400"
+          >
+            {rhymeLoading ? 'Počítám…' : 'Navrhni'}
+          </button>
+        </div>
+
+        {rhymeCandidates.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {rhymeCandidates.map((word) => (
+              <button
+                key={word}
+                onClick={() => onInsert?.(word)}
+                className="text-[11px] px-2 py-0.5 rounded bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100"
+              >
+                {word}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="flex-1 overflow-y-auto">
         {suggestions.length > 0 && (

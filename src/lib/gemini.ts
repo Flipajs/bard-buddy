@@ -112,3 +112,40 @@ The chorus should be memorable and singable.`;
 
   return generateContent(prompt);
 }
+
+export async function generateRhymeCandidates(
+  rhymeEnding: string,
+  contextText: string,
+  references: string[] = [],
+  count: number = 20
+): Promise<string[]> {
+  const prompt = `You are a Czech lyric-writing assistant.
+
+Task:
+Generate ${count} single-word Czech rhyme candidates for ending "${rhymeEnding}".
+Use context from current draft and references to prefer semantically fitting words.
+
+Current draft context:
+${contextText}
+${buildReferenceSection(references)}
+
+Rules:
+- Return only Czech words (single tokens), one per line
+- No punctuation, no numbering
+- Prioritize words that are singable and useful in song lyrics
+- Avoid obvious duplicates
+- Keep output original and context-aware`;
+
+  const content = await generateContent(prompt);
+  const unique = Array.from(
+    new Set(
+      content
+        .split('\n')
+        .map((w) => w.trim().toLowerCase())
+        .map((w) => w.replace(/[^\p{L}-]/gu, ''))
+        .filter(Boolean)
+    )
+  );
+
+  return unique.slice(0, count);
+}

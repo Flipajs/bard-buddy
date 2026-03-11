@@ -14,22 +14,30 @@ function getDb() {
       id INTEGER PRIMARY KEY,
       poem_id INTEGER NOT NULL,
       title TEXT NOT NULL,
+      author TEXT NOT NULL DEFAULT '',
       content TEXT NOT NULL,
       created_at INTEGER NOT NULL,
       FOREIGN KEY(poem_id) REFERENCES poems(id)
     );
   `);
 
+  const columns = db.prepare("PRAGMA table_info(references_library)").all() as Array<{ name: string }>;
+  const hasAuthor = columns.some((c) => c.name === 'author');
+  if (!hasAuthor) {
+    db.exec("ALTER TABLE references_library ADD COLUMN author TEXT NOT NULL DEFAULT ''");
+  }
+
   return db;
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { action, poemId, id, title, content } = (await req.json()) as {
+    const { action, poemId, id, title, author, content } = (await req.json()) as {
       action: 'list' | 'add' | 'delete';
       poemId?: number;
       id?: number;
       title?: string;
+      author?: string;
       content?: string;
     };
 
@@ -41,7 +49,7 @@ export async function POST(req: NextRequest) {
       }
 
       const rows = db
-        .prepare('SELECT id, title, content, created_at FROM references_library WHERE poem_id = ? ORDER BY created_at DESC')
+        .prepare('SELECT id, title, author, content, created_at FROM references_library WHERE poem_id = ? ORDER BY created_at DESC')
         .all(poemId);
       return NextResponse.json({ success: true, references: rows });
     }
@@ -55,8 +63,8 @@ export async function POST(req: NextRequest) {
       }
 
       const result = db
-        .prepare('INSERT INTO references_library (poem_id, title, content, created_at) VALUES (?, ?, ?, ?)')
-        .run(poemId, title.trim(), content.trim(), Date.now());
+        .prepare('INSERT INTO references_library (poem_id, title, author, content, created_at) VALUES (?, ?, ?, ?, ?)')
+        .run(poemId, title.trim(), (author || '').trim(), content.trim(), Date.now());
 
       return NextResponse.json({ success: true, id: result.lastInsertRowid });
     }

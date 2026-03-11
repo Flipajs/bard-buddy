@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 interface ReferenceItem {
   id: number;
   title: string;
+  author: string;
   content: string;
   created_at: number;
 }
@@ -25,6 +26,7 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
   const [references, setReferences] = useState<ReferenceItem[]>([]);
   const [selectedReferenceIds, setSelectedReferenceIds] = useState<number[]>([]);
   const [newRefTitle, setNewRefTitle] = useState('');
+  const [newRefAuthor, setNewRefAuthor] = useState('');
   const [newRefContent, setNewRefContent] = useState('');
 
   const fetchReferences = async () => {
@@ -54,12 +56,14 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
         action: 'add',
         poemId,
         title: newRefTitle,
+        author: newRefAuthor,
         content: newRefContent,
       }),
     });
 
     if (res.ok) {
       setNewRefTitle('');
+      setNewRefAuthor('');
       setNewRefContent('');
       fetchReferences();
     }
@@ -88,7 +92,7 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
     try {
       const selectedReferences = references
         .filter((ref) => selectedReferenceIds.includes(ref.id))
-        .map((ref) => ({ title: ref.title, content: ref.content }));
+        .map((ref) => ({ title: ref.title, author: ref.author, content: ref.content }));
 
       const res = await fetch('/api/assist', {
         method: 'POST',
@@ -154,6 +158,12 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
           placeholder="Název reference"
           className="w-full text-xs border rounded px-2 py-1 mb-2"
         />
+        <input
+          value={newRefAuthor}
+          onChange={(e) => setNewRefAuthor(e.target.value)}
+          placeholder="Autor (volitelné)"
+          className="w-full text-xs border rounded px-2 py-1 mb-2"
+        />
         <textarea
           value={newRefContent}
           onChange={(e) => setNewRefContent(e.target.value)}
@@ -186,8 +196,11 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
                         }
                       }}
                     />
-                    {ref.title}
+                    <span>{ref.title}</span>
                   </label>
+                  <div className="text-[11px] text-gray-500">
+                    Autor: {ref.author?.trim() ? ref.author : 'neuveden'}
+                  </div>
                   <div className="text-[11px] text-gray-600 line-clamp-2 mt-1">{ref.content}</div>
                   <button
                     onClick={() => deleteReference(ref.id)}

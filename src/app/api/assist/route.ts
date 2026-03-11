@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       text: string;
       mode: AssistMode;
       theme?: string;
-      references?: Array<{ title: string; content: string }>;
+      references?: Array<{ title: string; author?: string; content: string }>;
     };
 
     if (!text) {
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     let result: string | string[] = '';
 
     const referenceTexts = (references || []).map(
-      (r) => `### ${r.title}\n${r.content}`
+      (r) => `### ${r.title}${r.author ? ` — ${r.author}` : ''}\n${r.content}`
     );
 
     if (mode === 'alternatives') {

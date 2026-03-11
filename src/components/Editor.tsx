@@ -252,10 +252,10 @@ export default function Editor({
         </div>
 
         <div className="flex flex-col min-h-0 bg-gray-50 overflow-x-hidden">
-          <div className="sticky top-0 z-10 grid grid-cols-[70px_78px_116px] h-[var(--bb-head-h)] items-center gap-2 px-2 py-1.5 border-b border-gray-200 bg-white text-[11px] font-semibold text-gray-600">
-            <span className="text-right">Slab.</span>
-            <span className="text-right">Zpěv.</span>
-            <span className="text-right">Konec / rým</span>
+          <div className="sticky top-0 z-10 grid grid-cols-[70px_78px_minmax(0,116px)] h-[var(--bb-head-h)] items-center gap-2 px-2 py-1.5 border-b border-gray-200 bg-white text-[11px] font-semibold text-gray-600 overflow-x-hidden">
+            <span className="text-right whitespace-nowrap">Slab.</span>
+            <span className="text-right whitespace-nowrap">Zpěv.</span>
+            <span className="text-right whitespace-nowrap truncate">Konec / rým</span>
           </div>
 
           <div
@@ -270,7 +270,7 @@ export default function Editor({
             {lineMetrics.map((line) => (
               <div
                 key={line.index}
-                className={`grid grid-cols-[70px_78px_116px] items-center gap-2 px-2 h-[var(--bb-row-h)] border-b border-gray-100 ${
+                className={`grid grid-cols-[70px_78px_minmax(0,116px)] items-center gap-2 px-2 h-[var(--bb-row-h)] border-b border-gray-100 overflow-x-hidden ${
                   line.index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                 }`}
               >
@@ -286,7 +286,7 @@ export default function Editor({
                   </span>
                 </div>
 
-                <div className="text-[11px] text-right overflow-hidden">
+                <div className="text-[11px] text-right overflow-hidden min-w-0">
                   {line.lastWord ? (
                     <span
                       title={`${line.lastWord}${line.rhymeEnding ? ` · -${line.rhymeEnding}` : ''}`}

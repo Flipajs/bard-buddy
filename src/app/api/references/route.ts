@@ -32,13 +32,14 @@ function getDb() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { action, poemId, id, title, author, content } = (await req.json()) as {
-      action: 'list' | 'add' | 'delete' | 'export-all';
+    const { action, poemId, id, title, author, content, references } = (await req.json()) as {
+      action: 'list' | 'add' | 'delete' | 'export-all' | 'import-all';
       poemId?: number;
       id?: number;
       title?: string;
       author?: string;
       content?: string;
+      references?: Array<{ title?: string; author?: string; content?: string }>;
     };
 
     const db = getDb();
@@ -101,6 +102,30 @@ export async function POST(req: NextRequest) {
         count: rows.length,
         references: rows,
       });
+    }
+
+    if (action === 'import-all') {
+      if (!poemId || !references?.length) {
+        return NextResponse.json(
+          { error: 'poemId and references[] are required' },
+          { status: 400 }
+        );
+      }
+
+      const stmt = db.prepare(
+        'INSERT INTO references_library (poem_id, title, author, content, created_at) VALUES (?, ?, ?, ?, ?)'
+      );
+
+      let imported = 0;
+      for (const ref of references) {
+        const t = (ref.title || '').trim();
+        const c = (ref.content || '').trim();
+        if (!t || !c) continue;
+        stmt.run(poemId, t, (ref.author || '').trim(), c, Date.now());
+        imported++;
+      }
+
+      return NextResponse.json({ success: true, imported });
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });

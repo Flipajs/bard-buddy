@@ -107,6 +107,43 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
     URL.revokeObjectURL(url);
   };
 
+  const importReferencesJson = async (file: File) => {
+    if (!poemId) return;
+
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const refs = Array.isArray(parsed?.references) ? parsed.references : [];
+
+      const payloadRefs = refs.map((r: unknown) => {
+        const obj = (r || {}) as { title?: string; author?: string; content?: string };
+        return {
+          title: obj.title,
+          author: obj.author,
+          content: obj.content,
+        };
+      });
+
+      const res = await fetch('/api/references', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'import-all', poemId, references: payloadRefs }),
+      });
+
+      if (!res.ok) {
+        alert('Import se nepodařil.');
+        return;
+      }
+
+      const data = await res.json();
+      alert(`Import hotov: ${data.imported} referencí.`);
+      fetchReferences();
+    } catch (e) {
+      console.error(e);
+      alert('Neplatný JSON soubor.');
+    }
+  };
+
   const generateSuggestions = async () => {
     if (!selectedText.trim()) {
       alert('Vyber text, aby mohl asistent pomoci.');
@@ -195,7 +232,7 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
           placeholder="Vlož oblíbenou báseň/text (jen jako inspirace)"
           className="w-full text-xs border rounded px-2 py-1 mb-2 h-20"
         />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={addReference}
             className="text-xs px-2 py-1 rounded bg-gray-800 text-white hover:bg-black"
@@ -209,6 +246,19 @@ export default function AssistPanel({ selectedText, poemId, onInsert }: AssistPa
           >
             Export .JSON
           </button>
+          <label className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-100 cursor-pointer">
+            Import .JSON
+            <input
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) importReferencesJson(f);
+                e.currentTarget.value = '';
+              }}
+            />
+          </label>
         </div>
 
         {references.length > 0 && (

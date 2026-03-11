@@ -63,9 +63,13 @@ export default function Editor({
 
     const snapshotContent = content;
 
-    setSaving(true);
-    onSavingChange?.(true);
+    // During debounce we are "pending", but not actively saving yet.
+    setSaving(false);
+    onSavingChange?.(false);
+
     saveTimeoutRef.current = setTimeout(async () => {
+      setSaving(true);
+      onSavingChange?.(true);
       try {
         await Promise.resolve(onSave?.(latestTitleRef.current, snapshotContent));
       } catch (error) {

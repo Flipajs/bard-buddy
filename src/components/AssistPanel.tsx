@@ -12,6 +12,7 @@ interface ReferenceItem {
 
 interface AssistPanelProps {
   selectedText: string;
+  currentText?: string;
   poemId?: number;
   selectedRhymeEnding?: string;
   onInsert?: (text: string) => void;
@@ -19,7 +20,7 @@ interface AssistPanelProps {
 
 type Mode = 'alternatives' | 'continuation' | 'chorus';
 
-export default function AssistPanel({ selectedText, poemId, selectedRhymeEnding, onInsert }: AssistPanelProps) {
+export default function AssistPanel({ selectedText, currentText, poemId, selectedRhymeEnding, onInsert }: AssistPanelProps) {
   const [mode, setMode] = useState<Mode>('alternatives');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -176,7 +177,7 @@ export default function AssistPanel({ selectedText, poemId, selectedRhymeEnding,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           rhymeEnding: ending,
-          text: selectedText || '',
+          text: currentText || selectedText || '',
           references: selectedReferences,
         }),
       });
@@ -381,7 +382,7 @@ export default function AssistPanel({ selectedText, poemId, selectedRhymeEnding,
           </button>
         </div>
 
-        {rhymeCandidates.length > 0 && (
+        {rhymeCandidates.length > 0 ? (
           <div className="flex flex-wrap gap-1">
             {rhymeCandidates.map((word) => (
               <button
@@ -393,6 +394,10 @@ export default function AssistPanel({ selectedText, poemId, selectedRhymeEnding,
               </button>
             ))}
           </div>
+        ) : (
+          !rhymeLoading && rhymeEnding.trim() && (
+            <div className="text-[11px] text-gray-500">Zatím žádné kandidáty — zkus jinou koncovku nebo delší kontext.</div>
+          )
         )}
       </div>
 

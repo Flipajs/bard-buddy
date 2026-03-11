@@ -192,6 +192,7 @@ export default function Home() {
         return (
           <AssistPanel
             selectedText={selectedText}
+            currentText={content}
             poemId={poemId || undefined}
             selectedRhymeEnding={selectedRhymeEnding}
             onInsert={handleInsert}
@@ -301,6 +302,7 @@ export default function Home() {
             {rightPanelTab === 'assist' && (
               <AssistPanel
                 selectedText={selectedText}
+                currentText={content}
                 poemId={poemId || undefined}
                 selectedRhymeEnding={selectedRhymeEnding}
                 onInsert={handleInsert}

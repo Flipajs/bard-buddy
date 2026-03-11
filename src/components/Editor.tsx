@@ -61,12 +61,19 @@ export default function Editor({
       clearTimeout(saveTimeoutRef.current);
     }
 
+    const snapshotContent = content;
+
     setSaving(true);
     onSavingChange?.(true);
-    saveTimeoutRef.current = setTimeout(() => {
-      onSave?.(latestTitleRef.current, content);
-      setSaving(false);
-      onSavingChange?.(false);
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        await Promise.resolve(onSave?.(latestTitleRef.current, snapshotContent));
+      } catch (error) {
+        console.error('Save failed:', error);
+      } finally {
+        setSaving(false);
+        onSavingChange?.(false);
+      }
     }, 3000);
 
     return () => {
@@ -75,6 +82,12 @@ export default function Editor({
       }
     };
   }, [content, onSave, onSavingChange]);
+
+  useEffect(() => {
+    return () => {
+      onSavingChange?.(false);
+    };
+  }, [onSavingChange]);
 
   return (
     <div className="flex flex-col h-full bg-white">

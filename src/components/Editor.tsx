@@ -196,13 +196,13 @@ export default function Editor({
       </div>
 
       <div
-        className="flex-1 min-h-0 grid grid-cols-[1fr_286px]"
+        className="flex-1 min-h-0 min-w-0 grid grid-cols-[1fr_286px] overflow-x-hidden"
         style={{
           ['--bb-row-h' as any]: '24px',
           ['--bb-head-h' as any]: '31px',
         }}
       >
-        <div className="flex flex-col min-h-0 border-r border-gray-200">
+        <div className="flex flex-col min-h-0 min-w-0 border-r border-gray-200 overflow-x-hidden">
           <div className="h-[var(--bb-head-h)] border-b border-gray-200 bg-white" />
 
           <div className="flex-1 min-h-0 grid grid-cols-[46px_1fr]">
@@ -246,7 +246,7 @@ export default function Editor({
                 backgroundImage:
                   'repeating-linear-gradient(to bottom, #ffffff 0px, #ffffff 24px, #f9fafb 24px, #f9fafb 48px)',
               }}
-              className="flex-1 px-3 md:px-4 py-0 outline-none resize-none overflow-x-auto whitespace-pre font-mono tabular-nums text-sm leading-6"
+              className="flex-1 min-w-0 px-3 md:px-4 py-0 outline-none resize-none overflow-x-hidden whitespace-pre font-mono tabular-nums text-sm leading-6"
             />
           </div>
         </div>

@@ -175,13 +175,35 @@ export default function Home() {
     setEditorKey((k) => k + 1);
   };
 
-  const handleInsert = (text: string) => {
+  const handleInsert = (
+    text: string,
+    mode: 'replace-selection' | 'insert-caret' | 'append-line' | 'new-variant' = 'replace-selection'
+  ) => {
+    if (mode === 'new-variant') {
+      setContent((prev) => prev + '\n' + text);
+      setEditorKey((k) => k + 1);
+      return;
+    }
+
     setContent((prev) => {
-      if (selectionRange && selectionRange.end >= selectionRange.start) {
-        const before = prev.slice(0, selectionRange.start);
-        const after = prev.slice(selectionRange.end);
+      const hasRange = selectionRange && selectionRange.end >= selectionRange.start;
+
+      if (mode === 'append-line') {
+        return prev + '\n' + text;
+      }
+
+      if (mode === 'insert-caret' && hasRange) {
+        const before = prev.slice(0, selectionRange!.start);
+        const after = prev.slice(selectionRange!.start);
         return `${before}${text}${after}`;
       }
+
+      if (hasRange) {
+        const before = prev.slice(0, selectionRange!.start);
+        const after = prev.slice(selectionRange!.end);
+        return `${before}${text}${after}`;
+      }
+
       if (selectedText && prev.includes(selectedText)) {
         return prev.replace(selectedText, text);
       }

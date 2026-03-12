@@ -10,12 +10,14 @@ interface ReferenceItem {
   created_at: number;
 }
 
+type InsertMode = 'replace-selection' | 'insert-caret' | 'append-line' | 'new-variant';
+
 interface AssistPanelProps {
   selectedText: string;
   currentText?: string;
   poemId?: number;
   selectedRhymeEnding?: string;
-  onInsert?: (text: string) => void;
+  onInsert?: (text: string, mode?: InsertMode) => void;
 }
 
 type Mode = 'alternatives' | 'continuation' | 'chorus';
@@ -36,6 +38,7 @@ export default function AssistPanel({ selectedText, currentText, poemId, selecte
   const [rhymeLoading, setRhymeLoading] = useState(false);
   const [rhymeRefining, setRhymeRefining] = useState(false);
   const [rhymeSource, setRhymeSource] = useState<string>('');
+  const [insertMode, setInsertMode] = useState<InsertMode>('replace-selection');
 
   const fetchReferences = async () => {
     const res = await fetch('/api/references', {
@@ -394,6 +397,20 @@ export default function AssistPanel({ selectedText, currentText, poemId, selecte
       )}
 
       <div className="mb-3 p-2 border rounded bg-white">
+        <div className="text-xs font-semibold text-gray-700 mb-2">Vkládání návrhů</div>
+        <select
+          value={insertMode}
+          onChange={(e) => setInsertMode(e.target.value as InsertMode)}
+          className="w-full text-xs border rounded px-2 py-1"
+        >
+          <option value="replace-selection">Nahradit výběr</option>
+          <option value="insert-caret">Vložit na kurzor</option>
+          <option value="append-line">Přidat jako nový řádek</option>
+          <option value="new-variant">Uložit jako novou variantu</option>
+        </select>
+      </div>
+
+      <div className="mb-3 p-2 border rounded bg-white">
         <div className="text-xs font-semibold text-gray-700 mb-2">Rhyme bank (beta)</div>
         <div className="flex items-center gap-2 mb-2">
           <input
@@ -422,7 +439,7 @@ export default function AssistPanel({ selectedText, currentText, poemId, selecte
             {rhymeCandidates.map((word) => (
               <button
                 key={word}
-                onClick={() => onInsert?.(word)}
+                onClick={() => onInsert?.(word, insertMode)}
                 className="text-[11px] px-2 py-0.5 rounded bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100"
               >
                 {word}
@@ -446,7 +463,7 @@ export default function AssistPanel({ selectedText, currentText, poemId, selecte
               >
                 <div className="text-xs text-gray-700 font-mono mb-1 line-clamp-4">{suggestion}</div>
                 <button
-                  onClick={() => onInsert?.(suggestion)}
+                  onClick={() => onInsert?.(suggestion, insertMode)}
                   className="text-xs text-green-700 hover:text-green-900 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   ↳ Vložit

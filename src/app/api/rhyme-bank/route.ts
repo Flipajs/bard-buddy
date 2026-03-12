@@ -3,6 +3,10 @@ import { generateRhymeCandidates } from '@/lib/gemini';
 
 export const runtime = 'nodejs';
 
+type CacheEntry = { candidates: string[]; updatedAt: number; source: 'heuristic' | 'llm' };
+const RHYME_CACHE = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 60_000;
+
 function normalizeCsTail(w: string): string {
   const tail = w.slice(-4).toLowerCase();
   const deaccent = tail
@@ -58,10 +62,11 @@ function fallbackCandidates(rhymeEnding: string, text: string, refs: string[]): 
 
 export async function POST(req: NextRequest) {
   try {
-    const { rhymeEnding, text, references } = (await req.json()) as {
+    const { rhymeEnding, text, references, phase } = (await req.json()) as {
       rhymeEnding: string;
       text: string;
       references?: Array<{ title?: string; author?: string; content: string }>;
+      phase?: 'instant' | 'refined';
     };
 
     if (!rhymeEnding?.trim()) {
@@ -73,22 +78,35 @@ export async function POST(req: NextRequest) {
       (r) => `### ${r.title || 'Reference'}${r.author ? ` — ${r.author}` : ''}\n${r.content}`
     );
 
-    const llmPromise = generateRhymeCandidates(
-      cleanEnding,
-      text || '',
-      referenceTexts,
-      30
-    );
+    const key = JSON.stringify({ e: cleanEnding, t: (text || '').slice(0, 2000), r: referenceTexts.slice(0, 3) });
+    const cached = RHYME_CACHE.get(key);
+    if (cached && Date.now() - cached.updatedAt < CACHE_TTL_MS && phase !== 'refined') {
+      return NextResponse.json({
+        success: true,
+        rhymeEnding: cleanEnding,
+        candidates: cached.candidates,
+        source: `cache-${cached.source}`,
+      });
+    }
 
+    if (phase === 'instant') {
+      const candidates = fallbackCandidates(cleanEnding, text || '', referenceTexts);
+      RHYME_CACHE.set(key, { candidates, updatedAt: Date.now(), source: 'heuristic' });
+      return NextResponse.json({ success: true, rhymeEnding: cleanEnding, candidates, source: 'heuristic' });
+    }
+
+    const llmPromise = generateRhymeCandidates(cleanEnding, text || '', referenceTexts, 30);
     const timeoutPromise = new Promise<string[]>((resolve) => {
       setTimeout(() => {
         resolve(fallbackCandidates(cleanEnding, text || '', referenceTexts));
-      }, 12000);
+      }, 8000);
     });
 
     const candidates = await Promise.race([llmPromise, timeoutPromise]);
+    const source = candidates.length ? 'llm-or-timeout' : 'heuristic';
+    RHYME_CACHE.set(key, { candidates, updatedAt: Date.now(), source: 'llm' });
 
-    return NextResponse.json({ success: true, rhymeEnding: cleanEnding, candidates });
+    return NextResponse.json({ success: true, rhymeEnding: cleanEnding, candidates, source });
   } catch (error) {
     console.error('Rhyme bank API error:', error);
     return NextResponse.json({ error: 'Failed to build rhyme bank' }, { status: 500 });

@@ -34,6 +34,8 @@ export default function AssistPanel({ selectedText, currentText, poemId, selecte
   const [rhymeEnding, setRhymeEnding] = useState('');
   const [rhymeCandidates, setRhymeCandidates] = useState<string[]>([]);
   const [rhymeLoading, setRhymeLoading] = useState(false);
+  const [rhymeRefining, setRhymeRefining] = useState(false);
+  const [rhymeSource, setRhymeSource] = useState<string>('');
 
   const fetchReferences = async () => {
     const res = await fetch('/api/references', {
@@ -166,34 +168,61 @@ export default function AssistPanel({ selectedText, currentText, poemId, selecte
     const ending = (overrideEnding ?? rhymeEnding).trim().toLowerCase();
     if (!ending) return;
 
-    setRhymeLoading(true);
-    try {
-      const selectedReferences = references
-        .filter((ref) => selectedReferenceIds.includes(ref.id))
-        .map((ref) => ({ title: ref.title, author: ref.author, content: ref.content }));
+    const selectedReferences = references
+      .filter((ref) => selectedReferenceIds.includes(ref.id))
+      .map((ref) => ({ title: ref.title, author: ref.author, content: ref.content }));
 
-      const res = await fetch('/api/rhyme-bank', {
+    setRhymeLoading(true);
+    setRhymeRefining(false);
+    try {
+      // Phase 1: instant heuristic/cache
+      const instantRes = await fetch('/api/rhyme-bank', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          phase: 'instant',
           rhymeEnding: ending,
           text: currentText || selectedText || '',
           references: selectedReferences,
         }),
       });
 
-      if (!res.ok) {
-        const err = await res.json();
-        alert(`Rhyme bank chyba: ${err.error || 'unknown'}`);
-      } else {
-        const data = await res.json();
-        setRhymeCandidates(data.candidates || []);
+      if (instantRes.ok) {
+        const instantData = await instantRes.json();
+        setRhymeCandidates(instantData.candidates || []);
+        setRhymeSource(instantData.source || 'heuristic');
+      }
+    } catch (e) {
+      console.error('Instant rhyme phase failed', e);
+    } finally {
+      setRhymeLoading(false);
+    }
+
+    // Phase 2: refined async update
+    setRhymeRefining(true);
+    try {
+      const refinedRes = await fetch('/api/rhyme-bank', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phase: 'refined',
+          rhymeEnding: ending,
+          text: currentText || selectedText || '',
+          references: selectedReferences,
+        }),
+      });
+
+      if (refinedRes.ok) {
+        const refinedData = await refinedRes.json();
+        if (Array.isArray(refinedData.candidates) && refinedData.candidates.length > 0) {
+          setRhymeCandidates(refinedData.candidates);
+        }
+        setRhymeSource(refinedData.source || 'refined');
       }
     } catch (error) {
-      console.error(error);
-      alert('Nepodařilo se vygenerovat rhyme bank.');
+      console.error('Refined rhyme phase failed', error);
     }
-    setRhymeLoading(false);
+    setRhymeRefining(false);
   };
 
   const generateSuggestions = async () => {
@@ -378,9 +407,15 @@ export default function AssistPanel({ selectedText, currentText, poemId, selecte
             disabled={rhymeLoading || !rhymeEnding.trim()}
             className="text-xs px-2 py-1 rounded bg-purple-600 text-white disabled:bg-gray-400"
           >
-            {rhymeLoading ? 'Počítám…' : 'Navrhni'}
+            {rhymeLoading ? 'Okamžitě…' : 'Navrhni'}
           </button>
         </div>
+
+        {(rhymeRefining || rhymeSource) && (
+          <div className="text-[11px] text-gray-500 mb-1">
+            {rhymeRefining ? 'Dopočítávám kvalitnější návrhy…' : `Zdroj: ${rhymeSource}`}
+          </div>
+        )}
 
         {rhymeCandidates.length > 0 ? (
           <div className="flex flex-wrap gap-1">
